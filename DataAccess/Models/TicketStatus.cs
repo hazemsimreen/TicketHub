@@ -1,10 +1,12 @@
-﻿namespace DataAccess.Models
+namespace DataAccess.Models
 {
-    public enum TicketStatus
+    public class TicketStatus
     {
-        Open = 0,
-        InProgress = 1,
-        Resolved = 2,
-        Closed = 3
+        public int Id { get; set; }
+
+        public string Code { get; set; } = string.Empty;
+
+        // هل هذا الـ Status نهائي؟ (Resolved / Closed)
+        public bool IsTerminal { get; set; }
     }
 }

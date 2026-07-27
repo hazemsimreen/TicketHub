@@ -1,14 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace DataAccess.Models
 {
-    public enum TicketPriority
+    public class TicketPriority
     {
-        Low = 0,
-        Medium = 1,
-        High = 2,
-        Urgent = 3
+        public int Id { get; set; }
+
+        public string Code { get; set; } = string.Empty;
+
+        public int SortOrder { get; set; }
+
+        // Navigation Properties
+        public ICollection<Category> Categories { get; set; } = new List<Category>();
     }
 }
