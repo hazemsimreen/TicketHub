@@ -1,0 +1,65 @@
+@WebApplication1_HostAddress = https://localhost:7292
+
+### Get all tickets
+
+GET {{WebApplication1_HostAddress}}/api/tickets
+Accept: application/json
+
+
+### Update ticket number 1 - should return 200
+
+PUT {{WebApplication1_HostAddress}}/api/tickets/1
+Content-Type: application/json
+
+{
+  "title": "Street light is still broken",
+  "description": "The street light has not worked for three days.",
+  "category": 0,
+  "priority": "Urgent"
+}
+
+
+### Update ticket that does not exist - should return 404
+
+PUT {{WebApplication1_HostAddress}}/api/tickets/9999
+Content-Type: application/json
+
+{
+  "title": "Unknown ticket",
+  "description": "This ticket does not exist.",
+  "category": 0,
+  "priority": "High"
+}
+
+
+### Exercise 6 - Get all tickets
+GET {{WebApplication1_HostAddress}}/api/tickets
+Accept: application/json
+
+
+### Exercise 6 - Filter by status number
+### 1 = InProgress
+GET {{WebApplication1_HostAddress}}/api/tickets?status=1
+Accept: application/json
+
+
+### Exercise 6 - Filter by category number
+### 0 = Infrastructure
+GET {{WebApplication1_HostAddress}}/api/tickets?category=0
+Accept: application/json
+
+
+### Exercise 6 - Filter by both
+GET {{WebApplication1_HostAddress}}/api/tickets?status=1&category=0
+Accept: application/json
+
+
+### Exercise 6 - Filter using enum name
+GET {{WebApplication1_HostAddress}}/api/tickets?status=Open
+Accept: application/json
+
+
+### Exercise 6 - Invalid status
+### Expected: 400 Bad Request
+GET {{WebApplication1_HostAddress}}/api/tickets?status=Banana
+Accept: application/json
