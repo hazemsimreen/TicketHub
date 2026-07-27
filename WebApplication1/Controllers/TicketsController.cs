@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using WebApplication1.Models;
+﻿using DataAccess.Models;
+using Microsoft.AspNetCore.Mvc;
+using DataAccess.Models;
 
 namespace WebApplication1.Controllers
 {

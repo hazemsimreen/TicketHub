@@ -1,5 +1,5 @@
 ﻿
-namespace DataAccess.Models
+namespace DataAccess.Models { 
 
        public enum TicketCategory
 {

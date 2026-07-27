@@ -1,5 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
-using WebApplication1.Models;
+﻿using DataAccess.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace WebApplication1.Dtos
 {
