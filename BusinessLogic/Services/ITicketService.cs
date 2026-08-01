@@ -1,15 +1,13 @@
 ﻿using Contract.Dtos;
 using DataAccess.Models;
-using System.Net.Sockets;
-using System.Xml.Linq;
 
 namespace BusinessLogic.Services
 {
     public interface ITicketService
     {
         IReadOnlyList<Ticket> GetTickets(
-            TicketStatus? status,
-            TicketCategory? category);
+            int? statusId,
+            int? categoryId);
 
         Ticket? GetTicketById(int id);
 
@@ -21,13 +19,13 @@ namespace BusinessLogic.Services
 
         Ticket? UpdateTicketStatus(
             int id,
-            TicketStatus status);
+            int statusId);
 
         bool DeleteTicket(int id);
 
-        IReadOnlyList<Comment>? GetComments(int ticketId);
+        IReadOnlyList<TicketComment>? GetComments(int ticketId);
 
-        Comment? AddComment(
+        TicketComment? AddComment(
             int ticketId,
             CreateCommentDto request);
 

@@ -1,10 +1,13 @@
 ﻿namespace DataAccess.Models;
 
-public class NotificationTypes
+public class NotificationType
 {
     public int Id { get; set; }
 
     public string Code { get; set; } = string.Empty;
 
     public string TitleTemplate { get; set; } = string.Empty;
+
+    public ICollection<Notification> Notifications { get; set; }
+        = new List<Notification>();
 }

@@ -1,14 +1,16 @@
-namespace DataAccess.Models
+namespace DataAccess.Models;
+
+public class TicketPriority
 {
-    public class TicketPriority
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public string Code { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
 
-        public int SortOrder { get; set; }
+    public int SortOrder { get; set; }
 
-        // Navigation Properties
-        public ICollection<Category> Categories { get; set; } = new List<Category>();
-    }
+    public ICollection<Category> DefaultCategories { get; set; }
+        = new List<Category>();
+
+    public ICollection<Ticket> Tickets { get; set; }
+        = new List<Ticket>();
 }

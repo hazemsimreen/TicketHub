@@ -1,12 +1,19 @@
-namespace DataAccess.Models
+namespace DataAccess.Models;
+
+public class TicketStatus
 {
-    public class TicketStatus
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public string Code { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
 
-        // هل هذا الـ Status نهائي؟ (Resolved / Closed)
-        public bool IsTerminal { get; set; }
-    }
+    public bool IsTerminal { get; set; }
+
+    public ICollection<Ticket> Tickets { get; set; }
+        = new List<Ticket>();
+
+    public ICollection<TicketStatusHistory> FromStatusHistories { get; set; }
+        = new List<TicketStatusHistory>();
+
+    public ICollection<TicketStatusHistory> ToStatusHistories { get; set; }
+        = new List<TicketStatusHistory>();
 }
