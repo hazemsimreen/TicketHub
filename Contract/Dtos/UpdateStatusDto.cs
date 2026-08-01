@@ -1,8 +1,7 @@
 ﻿using DataAccess.Models;
 using System.ComponentModel.DataAnnotations;
 
-
-namespace Contract.Dtos
+namespace WebApplication1.Dtos
 {
     public class UpdateStatusDto
     {

@@ -1,6 +1,6 @@
 ﻿using DataAccess.Models;
 using System.ComponentModel.DataAnnotations;
-
+using DataAccess.Models;
 
 namespace Contract.Dtos
 {
@@ -12,8 +12,8 @@ namespace Contract.Dtos
         [Required]
         public string Description { get; set; } = string.Empty;
 
-        [EnumDataType(typeof(TicketCategory))]
-        public TicketCategory Category { get; set; }
+        [Required]
+        public int CategoryId { get; set; }
 
         [Required]
         public string Priority { get; set; } = string.Empty;
