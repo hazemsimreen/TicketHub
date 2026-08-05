@@ -69,6 +69,12 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(x => x.Code)
                 .IsUnique();
+            
+            entity.HasData(
+                new Role { Id = 1, Code = "Citizen", IsDepartmentScoped = false },
+                new Role { Id = 2, Code = "Agent", IsDepartmentScoped = true },
+                new Role { Id = 3, Code = "Admin", IsDepartmentScoped = false }
+            );
         });
 
         modelBuilder.Entity<User>(entity =>
