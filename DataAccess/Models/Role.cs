@@ -1,9 +1,8 @@
 ﻿namespace DataAccess.Models;
 
-public class Role
+public class Role : AuditableEntity
 {
-    public int Id { get; set; }
-
+    
     public string Code { get; set; } = string.Empty;
 
     public bool IsDepartmentScoped { get; set; }

@@ -1,14 +1,14 @@
 ﻿namespace DataAccess.Models;
 
-public class Category
+public class Category : AuditableEntity
 {
-    public int Id { get; set; }
+
 
     public string Name { get; set; } = string.Empty;
 
-    public int DepartmentId { get; set; }
+    public Guid DepartmentId { get; set; }
 
-    public int? DefaultPriorityId { get; set; }
+    public Guid? DefaultPriorityId { get; set; }
 
     public Department Department { get; set; } = null!;
 

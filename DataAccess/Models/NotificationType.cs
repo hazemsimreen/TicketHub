@@ -1,8 +1,7 @@
 ﻿namespace DataAccess.Models;
 
-public class NotificationType
+public class NotificationType : AuditableEntity
 {
-    public int Id { get; set; }
 
     public string Code { get; set; } = string.Empty;
 

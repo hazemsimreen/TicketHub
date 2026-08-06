@@ -1,30 +1,24 @@
 ﻿namespace DataAccess.Models;
 
-public class Ticket
+public class Ticket : AuditableEntity
 {
-    public int Id { get; set; }
+
 
     public string TicketNumber { get; set; } = string.Empty;
 
-    public string Title { get; set; } = string.Empty;
+    public string Title { get; set; }=null!;
 
     public string Description { get; set; } = string.Empty;
 
-    public int SubmittedByUserId { get; set; }
+    public Guid SubmittedByUserId { get; set; }
 
-    public int CategoryId { get; set; }
+    public Guid CategoryId { get; set; }
 
-    public int DepartmentId { get; set; }
+    public Guid DepartmentId { get; set; }
 
-    public int PriorityId { get; set; }
+    public Guid PriorityId { get; set; }
 
-    public int StatusId { get; set; }
-
-    public bool IsDeleted { get; set; }
-
-    public DateTime CreatedAt { get; set; }
-
-    public DateTime? UpdatedAt { get; set; }
+    public Guid StatusId { get; set; }
 
     public DateTime? ResolvedAt { get; set; }
 

@@ -1,13 +1,26 @@
 using Microsoft.AspNetCore.Identity;
 namespace DataAccess.Models;
 
-public class User: IdentityUser<int>
+public class User: IdentityUser<Guid> 
 {
-   
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public string? CreatedBy { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    public string? UpdatedBy { get; set; }
+
+    public bool IsDeleted { get; set; } = false;
+
+    public DateTime? DeletedAt { get; set; }
+
+    public string? DeletedBy { get; set; }
 
     public string UserType { get; set; } = string.Empty;
 
-    public int? PrimaryDepartmentId { get; set; }
+    public Guid? PrimaryDepartmentId { get; set; }
 
     public Department? PrimaryDepartment { get; set; }
 
