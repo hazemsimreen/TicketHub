@@ -18,8 +18,8 @@ public class TicketsController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<TicketResponse>>> GetTickets(
-        [FromQuery] int? statusId,
-        [FromQuery] int? categoryId)
+        [FromQuery] Guid? statusId,
+        [FromQuery] Guid? categoryId)
     {
         IQueryable<Ticket> query = _db.Tickets.AsNoTracking();
 
@@ -58,8 +58,8 @@ public class TicketsController : ControllerBase
         return Ok(tickets);
     }
 
-    [HttpGet("{id:int}")]
-    public async Task<ActionResult<TicketResponse>> GetTicketById(int id)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<TicketResponse>> GetTicketById(Guid id)
     {
         var ticket = await _db.Tickets
             .AsNoTracking()
@@ -131,7 +131,7 @@ public class TicketsController : ControllerBase
             return BadRequest("Priority was not found.");
         }
 
-        int statusId;
+        Guid statusId;
 
         if (request.StatusId.HasValue)
         {
@@ -201,9 +201,9 @@ public class TicketsController : ControllerBase
             response);
     }
 
-    [HttpPut("{id:int}")]
+    [HttpPut("{id:guid}")]
     public async Task<ActionResult<TicketResponse>> UpdateTicket(
-        int id,
+        Guid id,
         [FromBody] UpdateTicketRequest request)
     {
         var ticket = await _db.Tickets
@@ -256,9 +256,9 @@ public class TicketsController : ControllerBase
         return Ok(MapTicket(ticket));
     }
 
-    [HttpPut("{id:int}/status")]
+    [HttpPut("{id:guid}/status")]
     public async Task<ActionResult<TicketResponse>> UpdateTicketStatus(
-        int id,
+        Guid id,
         [FromBody] UpdateTicketStatusRequest request)
     {
         var ticket = await _db.Tickets
@@ -297,8 +297,8 @@ public class TicketsController : ControllerBase
         return Ok(MapTicket(ticket));
     }
 
-    [HttpDelete("{id:int}")]
-    public async Task<IActionResult> DeleteTicket(int id)
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteTicket(Guid id)
     {
         var ticket = await _db.Tickets
             .FirstOrDefaultAsync(ticket => ticket.Id == id);
@@ -316,9 +316,9 @@ public class TicketsController : ControllerBase
         return NoContent();
     }
 
-    [HttpGet("{ticketId:int}/comments")]
+    [HttpGet("{ticketId:guid}/comments")]
     public async Task<ActionResult<IEnumerable<CommentResponse>>> GetComments(
-        int ticketId)
+        Guid ticketId)
     {
         var ticketExists = await _db.Tickets
             .AnyAsync(ticket => ticket.Id == ticketId);
@@ -349,9 +349,9 @@ public class TicketsController : ControllerBase
         return Ok(comments);
     }
 
-    [HttpPost("{ticketId:int}/comments")]
+    [HttpPost("{ticketId:guid}/comments")]
     public async Task<ActionResult<CommentResponse>> AddComment(
-        int ticketId,
+        Guid ticketId,
         [FromBody] CreateCommentRequest request)
     {
         var ticketExists = await _db.Tickets
@@ -466,15 +466,15 @@ public class CreateTicketRequest
 
     public string Description { get; set; } = string.Empty;
 
-    public int SubmittedByUserId { get; set; }
+    public Guid SubmittedByUserId { get; set; }
 
-    public int CategoryId { get; set; }
+    public Guid CategoryId { get; set; }
 
-    public int DepartmentId { get; set; }
+    public Guid DepartmentId { get; set; }
 
-    public int PriorityId { get; set; }
+    public Guid PriorityId { get; set; }
 
-    public int? StatusId { get; set; }
+    public Guid? StatusId { get; set; }
 }
 
 public class UpdateTicketRequest
@@ -483,25 +483,25 @@ public class UpdateTicketRequest
 
     public string Description { get; set; } = string.Empty;
 
-    public int CategoryId { get; set; }
+    public Guid CategoryId { get; set; }
 
-    public int DepartmentId { get; set; }
+    public Guid DepartmentId { get; set; }
 
-    public int PriorityId { get; set; }
+    public Guid PriorityId { get; set; }
 }
 
 public class UpdateTicketStatusRequest
 {
-    public int StatusId { get; set; }
+    public Guid StatusId { get; set; }
 }
 
 public class CreateCommentRequest
 {
-    public int AuthorUserId { get; set; }
+    public Guid AuthorUserId { get; set; }
 
-    public int? StepInstanceId { get; set; }
+    public Guid? StepInstanceId { get; set; }
 
-    public int? ParentCommentId { get; set; }
+    public Guid? ParentCommentId { get; set; }
 
     public string Body { get; set; } = string.Empty;
 
@@ -510,7 +510,7 @@ public class CreateCommentRequest
 
 public class TicketResponse
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     public string TicketNumber { get; set; } = string.Empty;
 
@@ -518,15 +518,15 @@ public class TicketResponse
 
     public string Description { get; set; } = string.Empty;
 
-    public int SubmittedByUserId { get; set; }
+    public Guid SubmittedByUserId { get; set; }
 
-    public int CategoryId { get; set; }
+    public Guid CategoryId { get; set; }
 
-    public int DepartmentId { get; set; }
+    public Guid DepartmentId { get; set; }
 
-    public int PriorityId { get; set; }
+    public Guid PriorityId { get; set; }
 
-    public int StatusId { get; set; }
+    public Guid StatusId { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -537,15 +537,15 @@ public class TicketResponse
 
 public class CommentResponse
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
-    public int TicketId { get; set; }
+    public Guid TicketId { get; set; }
 
-    public int AuthorUserId { get; set; }
+    public Guid AuthorUserId { get; set; }
 
-    public int? StepInstanceId { get; set; }
+    public Guid? StepInstanceId { get; set; }
 
-    public int? ParentCommentId { get; set; }
+    public Guid? ParentCommentId { get; set; }
 
     public string Body { get; set; } = string.Empty;
 
@@ -556,7 +556,7 @@ public class CommentResponse
 
 public class CategorySummaryResponse
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     public string CategoryName { get; set; } = string.Empty;
 

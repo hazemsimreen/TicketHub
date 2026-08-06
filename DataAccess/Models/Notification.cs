@@ -1,16 +1,15 @@
 ﻿namespace DataAccess.Models;
 
-public class Notification
+public class Notification : AuditableEntity
 {
-    public int Id { get; set; }
+ 
 
-    public int RecipientUserId { get; set; }
+    public Guid RecipientUserId { get; set; }
 
-    public int NotificationTypeId { get; set; }
+    public Guid NotificationTypeId { get; set; }
 
-    public int? TicketId { get; set; }
 
-    public bool IsRead { get; set; }
+    public bool IsRead { get; set; } = false;
 
     public User RecipientUser { get; set; } = null!;
 

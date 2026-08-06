@@ -1,18 +1,17 @@
 ﻿namespace DataAccess.Models;
 
-public class TicketTransfer
+public class TicketTransfer : AuditableEntity
 {
-    public int Id { get; set; }
+   
+    public Guid TicketId { get; set; }
 
-    public int TicketId { get; set; }
+    public Guid OriginStepInstanceId { get; set; }
 
-    public int OriginStepInstanceId { get; set; }
+    public Guid? FromUserId { get; set; }
 
-    public int? FromUserId { get; set; }
+    public Guid? ToUserId { get; set; }
 
-    public int? ToUserId { get; set; }
-
-    public int? ToDepartmentId { get; set; }
+    public Guid? ToDepartmentId { get; set; }
 
     public string Status { get; set; } = string.Empty;
 

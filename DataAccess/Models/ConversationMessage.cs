@@ -1,12 +1,12 @@
 ﻿namespace DataAccess.Models;
 
-public class ConversationMessage
+public class ConversationMessage : AuditableEntity
 {
-    public int Id { get; set; }
+    
 
-    public int ConversationId { get; set; }
+    public Guid ConversationId { get; set; }
 
-    public int SenderUserId { get; set; }
+    public Guid SenderUserId { get; set; }
 
     public bool IsSystemGenerated { get; set; }
 

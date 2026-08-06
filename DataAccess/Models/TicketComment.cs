@@ -1,22 +1,22 @@
 ﻿namespace DataAccess.Models;
 
-public class TicketComment
+public class TicketComment : AuditableEntity
 {
-    public int Id { get; set; }
+    
 
-    public int TicketId { get; set; }
+    public Guid TicketId { get; set; }
 
-    public int AuthorUserId { get; set; }
+    public Guid AuthorUserId { get; set; }
 
-    public int? StepInstanceId { get; set; }
+    public Guid? StepInstanceId { get; set; }
 
-    public int? ParentCommentId { get; set; }
+    public Guid? ParentCommentId { get; set; }
 
     public string Body { get; set; } = string.Empty;
 
     public bool IsInternal { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+
 
     public Ticket Ticket { get; set; } = null!;
 

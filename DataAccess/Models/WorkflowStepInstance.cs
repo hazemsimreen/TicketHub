@@ -1,18 +1,17 @@
 ﻿namespace DataAccess.Models;
 
-public class WorkflowStepInstance
+public class WorkflowStepInstance : AuditableEntity
 {
-    public int Id { get; set; }
 
-    public int WorkflowInstanceId { get; set; }
+    public Guid WorkflowInstanceId { get; set; }
 
-    public int WorkflowStepId { get; set; }
+    public Guid WorkflowStepId { get; set; }
 
     public int StepOrder { get; set; }
 
     public string Status { get; set; } = string.Empty;
 
-    public int? AssignedToUserId { get; set; }
+    public Guid? AssignedToUserId { get; set; }
 
     public WorkflowInstance WorkflowInstance { get; set; } = null!;
 

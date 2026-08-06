@@ -4,7 +4,8 @@ using DataAccess.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
-
+using BusinessLogic.Extensions;
+using DataAccess.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration
@@ -16,7 +17,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 
 builder.Services.AddIdentityCore<User>()
-    .AddRoles<IdentityRole<int>>()
+    .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<AppDbContext>();
 
 builder.Services
@@ -30,8 +31,16 @@ builder.Services
     .ValidateOnStart();
 
 
+
+
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddControllers();
+
+
+
+
+builder.Services.AddBusinessLogic();
+builder.Services.AddDataAccess();
 
 
 builder.Services.AddEndpointsApiExplorer();

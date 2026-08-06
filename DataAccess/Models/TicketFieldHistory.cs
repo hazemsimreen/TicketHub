@@ -1,14 +1,13 @@
 ﻿namespace DataAccess.Models;
 
-public class TicketFieldHistory
+public class TicketFieldHistory : AuditableEntity
 {
-    public int Id { get; set; }
 
-    public int TicketId { get; set; }
+    public Guid TicketId { get; set; }
 
     public string FieldName { get; set; } = string.Empty;
 
-    public int ChangedByUserId { get; set; }
+    public Guid ChangedByUserId { get; set; }
 
     public Ticket Ticket { get; set; } = null!;
 

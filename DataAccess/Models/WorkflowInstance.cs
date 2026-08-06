@@ -1,12 +1,11 @@
 ﻿namespace DataAccess.Models;
 
-public class WorkflowInstance
+public class WorkflowInstance : AuditableEntity
 {
-    public int Id { get; set; }
 
-    public int TicketId { get; set; }
+    public Guid TicketId { get; set; }
 
-    public int WorkflowDefinitionId { get; set; }
+    public Guid WorkflowDefinitionId { get; set; }
 
     public string Status { get; set; } = string.Empty;
 
