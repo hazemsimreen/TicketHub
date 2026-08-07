@@ -1,9 +1,12 @@
 ﻿using DataAccess.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataAccess.Context;
 
-public class AppDbContext : DbContext
+public class AppDbContext
+    : IdentityDbContext<User, IdentityRole<Guid>, Guid>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
@@ -12,39 +15,79 @@ public class AppDbContext : DbContext
 
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<Role> Roles => Set<Role>();
-    public DbSet<User> Users => Set<User>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
+
     public DbSet<TicketPriority> TicketPriorities => Set<TicketPriority>();
     public DbSet<TicketStatus> TicketStatuses => Set<TicketStatus>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Ticket> Tickets => Set<Ticket>();
+
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ConversationParticipant> ConversationParticipants =>
         Set<ConversationParticipant>();
     public DbSet<ConversationMessage> ConversationMessages =>
         Set<ConversationMessage>();
+
     public DbSet<TicketComment> TicketComments => Set<TicketComment>();
     public DbSet<Attachment> Attachments => Set<Attachment>();
     public DbSet<TicketWatcher> TicketWatchers => Set<TicketWatcher>();
+
     public DbSet<TicketStatusHistory> TicketStatusHistories =>
         Set<TicketStatusHistory>();
+
     public DbSet<TicketFieldHistory> TicketFieldHistories =>
         Set<TicketFieldHistory>();
+
     public DbSet<WorkflowDefinition> WorkflowDefinitions =>
         Set<WorkflowDefinition>();
-    public DbSet<WorkflowStep> WorkflowSteps => Set<WorkflowStep>();
+
+    public DbSet<WorkflowStep> WorkflowSteps =>
+        Set<WorkflowStep>();
+
     public DbSet<WorkflowInstance> WorkflowInstances =>
         Set<WorkflowInstance>();
+
     public DbSet<WorkflowStepInstance> WorkflowStepInstances =>
         Set<WorkflowStepInstance>();
-    public DbSet<TicketTransfer> TicketTransfers => Set<TicketTransfer>();
+
+    public DbSet<TicketTransfer> TicketTransfers =>
+        Set<TicketTransfer>();
+
     public DbSet<NotificationType> NotificationTypes =>
         Set<NotificationType>();
-    public DbSet<Notification> Notifications => Set<Notification>();
+
+    public DbSet<Notification> Notifications =>
+        Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // =========================================================
+        // Identity User
+        // =========================================================
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.ToTable("Users");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Id)
+                .ValueGeneratedOnAdd();
+
+            entity.HasIndex(x => x.Email)
+                .IsUnique();
+
+            entity.HasOne(x => x.PrimaryDepartment)
+                .WithMany(x => x.Users)
+                .HasForeignKey(x => x.PrimaryDepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // =========================================================
+        // Department
+        // =========================================================
 
         modelBuilder.Entity<Department>(entity =>
         {
@@ -61,6 +104,10 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // =========================================================
+        // Role
+        // =========================================================
+
         modelBuilder.Entity<Role>(entity =>
         {
             entity.ToTable("Roles");
@@ -69,29 +116,25 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(x => x.Code)
                 .IsUnique();
-            
         });
 
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.ToTable("Users");
-
-            entity.HasKey(x => x.Id);
-
-            entity.HasIndex(x => x.Email)
-                .IsUnique();
-
-            entity.HasOne(x => x.PrimaryDepartment)
-                .WithMany(x => x.Users)
-                .HasForeignKey(x => x.PrimaryDepartmentId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
+        // =========================================================
+        // UserRole
+        // =========================================================
 
         modelBuilder.Entity<UserRole>(entity =>
         {
             entity.ToTable("UserRoles");
 
             entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => new
+            {
+                x.UserId,
+                x.RoleId,
+                x.DepartmentId
+            })
+            .IsUnique();
 
             entity.HasOne(x => x.User)
                 .WithMany(x => x.UserRoles)
@@ -109,6 +152,10 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // =========================================================
+        // TicketPriority
+        // =========================================================
+
         modelBuilder.Entity<TicketPriority>(entity =>
         {
             entity.ToTable("TicketPriorities");
@@ -119,6 +166,10 @@ public class AppDbContext : DbContext
                 .IsUnique();
         });
 
+        // =========================================================
+        // TicketStatus
+        // =========================================================
+
         modelBuilder.Entity<TicketStatus>(entity =>
         {
             entity.ToTable("TicketStatuses");
@@ -128,6 +179,10 @@ public class AppDbContext : DbContext
             entity.HasIndex(x => x.Code)
                 .IsUnique();
         });
+
+        // =========================================================
+        // Category
+        // =========================================================
 
         modelBuilder.Entity<Category>(entity =>
         {
@@ -148,6 +203,10 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.DefaultPriorityId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // =========================================================
+        // Ticket
+        // =========================================================
 
         modelBuilder.Entity<Ticket>(entity =>
         {
@@ -186,6 +245,10 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // =========================================================
+        // Conversation
+        // =========================================================
+
         modelBuilder.Entity<Conversation>(entity =>
         {
             entity.ToTable("Conversations");
@@ -201,11 +264,22 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // =========================================================
+        // ConversationParticipant
+        // =========================================================
+
         modelBuilder.Entity<ConversationParticipant>(entity =>
         {
             entity.ToTable("ConversationParticipants");
 
             entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => new
+            {
+                x.ConversationId,
+                x.UserId
+            })
+            .IsUnique();
 
             entity.HasOne(x => x.Conversation)
                 .WithMany(x => x.Participants)
@@ -217,6 +291,10 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // =========================================================
+        // ConversationMessage
+        // =========================================================
 
         modelBuilder.Entity<ConversationMessage>(entity =>
         {
@@ -234,6 +312,10 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.SenderUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // =========================================================
+        // TicketComment
+        // =========================================================
 
         modelBuilder.Entity<TicketComment>(entity =>
         {
@@ -262,6 +344,10 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // =========================================================
+        // Attachment
+        // =========================================================
+
         modelBuilder.Entity<Attachment>(entity =>
         {
             entity.ToTable("Attachments");
@@ -284,11 +370,22 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // =========================================================
+        // TicketWatcher
+        // =========================================================
+
         modelBuilder.Entity<TicketWatcher>(entity =>
         {
             entity.ToTable("TicketWatchers");
 
             entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => new
+            {
+                x.TicketId,
+                x.UserId
+            })
+            .IsUnique();
 
             entity.HasOne(x => x.Ticket)
                 .WithMany(x => x.Watchers)
@@ -300,6 +397,10 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // =========================================================
+        // TicketStatusHistory
+        // =========================================================
 
         modelBuilder.Entity<TicketStatusHistory>(entity =>
         {
@@ -328,6 +429,10 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // =========================================================
+        // TicketFieldHistory
+        // =========================================================
+
         modelBuilder.Entity<TicketFieldHistory>(entity =>
         {
             entity.ToTable("TicketFieldHistory");
@@ -345,6 +450,10 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // =========================================================
+        // WorkflowDefinition
+        // =========================================================
+
         modelBuilder.Entity<WorkflowDefinition>(entity =>
         {
             entity.ToTable("WorkflowDefinitions");
@@ -361,6 +470,10 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // =========================================================
+        // WorkflowStep
+        // =========================================================
 
         modelBuilder.Entity<WorkflowStep>(entity =>
         {
@@ -384,6 +497,10 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // =========================================================
+        // WorkflowInstance
+        // =========================================================
+
         modelBuilder.Entity<WorkflowInstance>(entity =>
         {
             entity.ToTable("WorkflowInstances");
@@ -400,6 +517,10 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.WorkflowDefinitionId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // =========================================================
+        // WorkflowStepInstance
+        // =========================================================
 
         modelBuilder.Entity<WorkflowStepInstance>(entity =>
         {
@@ -422,6 +543,10 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.AssignedToUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // =========================================================
+        // TicketTransfer
+        // =========================================================
 
         modelBuilder.Entity<TicketTransfer>(entity =>
         {
@@ -455,6 +580,10 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // =========================================================
+        // NotificationType
+        // =========================================================
+
         modelBuilder.Entity<NotificationType>(entity =>
         {
             entity.ToTable("NotificationTypes");
@@ -464,6 +593,10 @@ public class AppDbContext : DbContext
             entity.HasIndex(x => x.Code)
                 .IsUnique();
         });
+
+        // =========================================================
+        // Notification
+        // =========================================================
 
         modelBuilder.Entity<Notification>(entity =>
         {
@@ -483,7 +616,7 @@ public class AppDbContext : DbContext
 
             entity.HasOne(x => x.Ticket)
                 .WithMany(x => x.Notifications)
-                .HasForeignKey(x => x.Id)
+                .HasForeignKey(x => x.TicketId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }
