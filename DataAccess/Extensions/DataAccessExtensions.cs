@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using TicketHub.DataAccess.Repositories;
 using Microsoft.Extensions.DependencyInjection;
+
 namespace DataAccess.Extensions;
 
 public static class DataAccessExtensions
@@ -9,7 +8,7 @@ public static class DataAccessExtensions
     public static IServiceCollection AddDataAccess(
         this IServiceCollection services)
     {
-        // Repository
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;
     }
