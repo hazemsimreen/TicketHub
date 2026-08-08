@@ -12,6 +12,8 @@ namespace WebApplication1.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    private static readonly Guid CitizenRoleId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
     private readonly UserManager<User> _userManager;
     private readonly ITokenService _tokens;
     private readonly AppDbContext _db;
@@ -38,10 +40,10 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
-        _db.Set<UserRole>().Add(new UserRole { UserId = user.Id, RoleId = Guid.Parse("1") });
+        _db.Set<UserRole>().Add(new UserRole { UserId = user.Id, RoleId = CitizenRoleId });
         await _db.SaveChangesAsync();
 
-        user.UserRoles.Add(new UserRole { RoleId = Guid.Parse("1"), Role = new Role { Code = "Citizen" } });
+        user.UserRoles.Add(new UserRole { RoleId = CitizenRoleId, Role = new Role { Code = "Citizen" } });
 
         return Ok(BuildAuthResponse(user));
     }
@@ -58,12 +60,16 @@ public class AuthController : ControllerBase
 
         return Ok(BuildAuthResponse(user));
     }
+
     private AuthResponse BuildAuthResponse(User user)
     {
         var (accessToken, expires) = _tokens.CreateAccessToken(user);
         var refreshToken = _tokens.CreateRefreshToken();
 
-        var roles = user.UserRoles.Select(ur => ur.Role.Code).ToList();
+        var roles = user.UserRoles
+            .Where(ur => ur.Role is not null)
+            .Select(ur => ur.Role.Code)
+            .ToList();
 
         return new AuthResponse(accessToken, refreshToken, expires, user.Email ?? string.Empty, roles);
     }
