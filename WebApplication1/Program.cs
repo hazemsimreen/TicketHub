@@ -9,6 +9,8 @@ using DataAccess.Extensions;
 using WebApplication1.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using BusinessLogic.Abstractions;
+using WebApplication1.Realtime;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,6 +70,7 @@ builder.Services.AddControllers();
 
 
 builder.Services.AddBusinessLogic();
+builder.Services.AddSingleton<IRealtimeNotifier, SignalRNotifier>();
 builder.Services.AddDataAccess();
 
 
