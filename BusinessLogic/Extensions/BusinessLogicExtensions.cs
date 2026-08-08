@@ -12,10 +12,13 @@ public static class BusinessLogicExtensions
     public static IServiceCollection AddBusinessLogic(
         this IServiceCollection services)
     {
+        
+        services.AddScoped<IChatService, ChatService>();
 
         // سيتم تسجيل الخدمات هنا اي خدمة يتم اضافتها في طبقة الاعمال يجب تسجيلها هنا لكي يتم حقنها في الطبقات الاخرى
 
         services.AddScoped<IRealtimeNotifier, NullRealtimeNotifier>();
         return services;
+        
     }
 }
