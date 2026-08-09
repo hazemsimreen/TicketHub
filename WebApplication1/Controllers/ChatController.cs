@@ -31,4 +31,29 @@ public class ChatController : ControllerBase
 
         return Ok(new { conversationId = result.Data });
     }
+    
+    [HttpGet("conversations/{conversationId}/messages")]
+    public async Task<ActionResult> GetMessages(
+        Guid conversationId,
+        [FromQuery] Guid? before,
+        [FromQuery] int take = 20)
+    {
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.GetMessages(conversationId, userId, before, take);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
+
+        var messages = result.Data!.Select(m => new
+        {
+            id = m.Id,
+            conversationId = m.ConversationId,
+            senderUserId = m.SenderUserId,
+            body = m.Body,
+            createdAt = m.CreatedAt
+        });
+
+        return Ok(messages);
+    }
 }
