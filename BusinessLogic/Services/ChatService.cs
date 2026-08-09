@@ -15,6 +15,11 @@ public interface IChatService
     
     Task<ServiceResult<Guid>> GetOrCreateConversation(
         Guid ticketId, Guid requestingUserId, CancellationToken ct = default);
+    
+    Task<ServiceResult<List<ConversationMessage>>> GetMessages(
+        Guid conversationId, Guid userId, Guid? beforeMessageId, int take = 20, CancellationToken ct = default);
+    
+    
 }
 
 public class ChatService : IChatService
@@ -96,5 +101,48 @@ public class ChatService : IChatService
         await _uow.SaveChangesAsync(ct);
 
         return ServiceResult<Guid>.Success(conversation.Id);
+    }
+    
+    
+    public async Task<ServiceResult<List<ConversationMessage>>> GetMessages(
+        Guid conversationId, Guid userId, Guid? beforeMessageId, int take = 20, CancellationToken ct = default)
+    {
+        var conversation = await _uow.Repository<Conversation>()
+            .Query()
+            .Include(c => c.Ticket)
+            .FirstOrDefaultAsync(c => c.Id == conversationId, ct);
+
+        if (conversation is null)
+            return ServiceResult<List<ConversationMessage>>.NotFound("Conversation not found.");
+
+        var canAccess = conversation.Ticket.SubmittedByUserId == userId
+                        || await _uow.Repository<UserRole>()
+                            .Query()
+                            .AnyAsync(ur => ur.UserId == userId && ur.DepartmentId == conversation.Ticket.DepartmentId, ct);
+
+    
+        if (!canAccess)
+            return ServiceResult<List<ConversationMessage>>.NotFound("Conversation not found.");
+
+        var query = _uow.Repository<ConversationMessage>()
+            .Query()
+            .Where(m => m.ConversationId == conversationId);
+
+        if (beforeMessageId is not null)
+        {
+            var cursor = await _uow.Repository<ConversationMessage>()
+                .Query()
+                .FirstOrDefaultAsync(m => m.Id == beforeMessageId, ct);
+
+            if (cursor is not null)
+                query = query.Where(m => m.CreatedAt < cursor.CreatedAt);
+        }
+
+        var messages = await query
+            .OrderByDescending(m => m.CreatedAt)
+            .Take(take)
+            .ToListAsync(ct);
+
+        return ServiceResult<List<ConversationMessage>>.Success(messages);
     }
 }
