@@ -19,7 +19,7 @@ public interface IChatService
     Task<ServiceResult<List<ConversationMessage>>> GetMessages(
         Guid conversationId, Guid userId, Guid? beforeMessageId, int take = 20, CancellationToken ct = default);
     
-    
+    Task<ServiceResult<List<Conversation>>> GetMyConversations(Guid userId, CancellationToken ct = default);
 }
 
 public class ChatService : IChatService
@@ -144,5 +144,24 @@ public class ChatService : IChatService
             .ToListAsync(ct);
 
         return ServiceResult<List<ConversationMessage>>.Success(messages);
+    }
+    
+    public async Task<ServiceResult<List<Conversation>>> GetMyConversations(Guid userId, CancellationToken ct = default)
+    {
+        var myDepartmentIds = await _uow.Repository<UserRole>()
+            .Query()
+            .Where(ur => ur.UserId == userId && ur.DepartmentId != null)
+            .Select(ur => ur.DepartmentId!.Value)
+            .ToListAsync(ct);
+
+        var conversations = await _uow.Repository<Conversation>()
+            .Query()
+            .Include(c => c.Ticket)
+            .Where(c => c.Ticket.SubmittedByUserId == userId
+                        || myDepartmentIds.Contains(c.Ticket.DepartmentId))
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync(ct);
+
+        return ServiceResult<List<Conversation>>.Success(conversations);
     }
 }

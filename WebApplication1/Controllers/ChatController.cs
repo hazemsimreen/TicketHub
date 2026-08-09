@@ -56,4 +56,21 @@ public class ChatController : ControllerBase
 
         return Ok(messages);
     }
+    [HttpGet("conversations")]
+    public async Task<ActionResult> GetMyConversations()
+    {
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.GetMyConversations(userId);
+
+        var conversations = result.Data!.Select(c => new
+        {
+            id = c.Id,
+            ticketId = c.TicketId,
+            ticketTitle = c.Ticket.Title,
+            createdAt = c.CreatedAt
+        });
+
+        return Ok(conversations);
+    }
 }
