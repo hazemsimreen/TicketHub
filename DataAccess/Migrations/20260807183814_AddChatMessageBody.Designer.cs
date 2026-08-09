@@ -4,6 +4,7 @@ using DataAccess.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260807183814_AddChatMessageBody")]
+    partial class AddChatMessageBody
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -120,17 +123,6 @@ namespace DataAccess.Migrations
                         .IsUnique();
 
                     b.ToTable("Categories", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("c0000000-0000-0000-0000-000000000001"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DefaultPriorityId = new Guid("a0000000-0000-0000-0000-000000000002"),
-                            DepartmentId = new Guid("d0000000-0000-0000-0000-000000000001"),
-                            IsDeleted = false,
-                            Name = "General"
-                        });
                 });
 
             modelBuilder.Entity("DataAccess.Models.Conversation", b =>
@@ -312,16 +304,6 @@ namespace DataAccess.Migrations
                     b.HasIndex("ParentDepartmentId");
 
                     b.ToTable("Departments", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("d0000000-0000-0000-0000-000000000001"),
-                            Code = "IT",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "IT Support"
-                        });
                 });
 
             modelBuilder.Entity("DataAccess.Models.Notification", b =>
@@ -457,32 +439,6 @@ namespace DataAccess.Migrations
                         .IsUnique();
 
                     b.ToTable("Roles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Code = "Citizen",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            IsDepartmentScoped = false
-                        },
-                        new
-                        {
-                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
-                            Code = "Agent",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            IsDepartmentScoped = true
-                        },
-                        new
-                        {
-                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
-                            Code = "Admin",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            IsDepartmentScoped = false
-                        });
                 });
 
             modelBuilder.Entity("DataAccess.Models.Ticket", b =>
@@ -705,16 +661,6 @@ namespace DataAccess.Migrations
                         .IsUnique();
 
                     b.ToTable("TicketPriorities", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("a0000000-0000-0000-0000-000000000002"),
-                            Code = "Normal",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            SortOrder = new Guid("00000000-0000-0000-0000-000000000001")
-                        });
                 });
 
             modelBuilder.Entity("DataAccess.Models.TicketStatus", b =>
@@ -757,16 +703,6 @@ namespace DataAccess.Migrations
                         .IsUnique();
 
                     b.ToTable("TicketStatuses", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("a0000000-0000-0000-0000-000000000003"),
-                            Code = "Open",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            IsTerminal = false
-                        });
                 });
 
             modelBuilder.Entity("DataAccess.Models.TicketStatusHistory", b =>
