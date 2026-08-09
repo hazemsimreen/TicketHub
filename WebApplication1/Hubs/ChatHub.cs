@@ -13,11 +13,9 @@ public class ChatHub : Hub
     {
         _chatService = chatService;
     }
-
     public async Task SendMessage(Guid conversationId, string body)
     {
         var userId = Guid.Parse(Context.UserIdentifier!);
-
         var result = await _chatService.SendMessageAsync(conversationId, userId, body);
 
         if (!result.IsSuccess)
@@ -27,8 +25,16 @@ public class ChatHub : Hub
         }
 
         await Clients.Group(conversationId.ToString())
-            .SendAsync("ReceiveMessage", result.Data);
+            .SendAsync("ReceiveMessage", new
+            {
+                id = result.Data!.Id,
+                conversationId = result.Data.ConversationId,
+                senderUserId = result.Data.SenderUserId,
+                body = result.Data.Body,
+                createdAt = result.Data.CreatedAt
+            });
     }
+    
 
     public async Task JoinConversation(Guid conversationId)
     {
