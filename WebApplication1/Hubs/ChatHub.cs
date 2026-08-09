@@ -1,6 +1,7 @@
 using BusinessLogic.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using System.Security.Claims;
 
 namespace WebApplication1.Hubs;
 
@@ -15,7 +16,7 @@ public class ChatHub : Hub
     }
     public async Task SendMessage(Guid conversationId, string body)
     {
-        var userId = Guid.Parse(Context.UserIdentifier!);
+        var userId = Guid.Parse(Context.User!.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
         var result = await _chatService.SendMessageAsync(conversationId, userId, body);
 
         if (!result.IsSuccess)

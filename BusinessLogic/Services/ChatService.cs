@@ -12,6 +12,9 @@ public interface IChatService
         Guid senderUserId,
         string body,
         CancellationToken ct = default);
+    
+    Task<ServiceResult<Guid>> GetOrCreateConversation(
+        Guid ticketId, Guid requestingUserId, CancellationToken ct = default);
 }
 
 public class ChatService : IChatService
@@ -61,5 +64,37 @@ public class ChatService : IChatService
         await _uow.SaveChangesAsync(ct);
 
         return ServiceResult<ConversationMessage>.Created(message);
+    }
+    
+    public async Task<ServiceResult<Guid>> GetOrCreateConversation(
+        Guid ticketId, Guid userId, CancellationToken ct = default)
+    {
+        var ticket = await _uow.Repository<Ticket>()
+            .Query()
+            .FirstOrDefaultAsync(t => t.Id == ticketId, ct);
+
+        if (ticket is null)
+            return ServiceResult<Guid>.NotFound("Ticket not found.");
+
+        var canAccess = ticket.SubmittedByUserId == userId
+                        || await _uow.Repository<UserRole>()
+                            .Query()
+                            .AnyAsync(ur => ur.UserId == userId && ur.DepartmentId == ticket.DepartmentId, ct);
+
+        if (!canAccess)
+            return ServiceResult<Guid>.Forbidden("You cannot access this ticket's conversation.");
+
+        var existing = await _uow.Repository<Conversation>()
+            .Query()
+            .FirstOrDefaultAsync(c => c.TicketId == ticketId, ct);
+
+        if (existing is not null)
+            return ServiceResult<Guid>.Success(existing.Id);
+
+        var conversation = new Conversation { TicketId = ticketId };
+        await _uow.Repository<Conversation>().AddAsync(conversation, ct);
+        await _uow.SaveChangesAsync(ct);
+
+        return ServiceResult<Guid>.Success(conversation.Id);
     }
 }
