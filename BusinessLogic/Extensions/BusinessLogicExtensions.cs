@@ -12,6 +12,8 @@ public static class BusinessLogicExtensions
     public static IServiceCollection AddBusinessLogic(
         this IServiceCollection services)
     {
+        
+        services.AddScoped<IChatService, ChatService>();
 
         // سيتم تسجيل الخدمات هنا اي خدمة يتم اضافتها في طبقة الاعمال يجب تسجيلها هنا لكي يتم حقنها في الطبقات الاخرى
 
@@ -19,5 +21,6 @@ public static class BusinessLogicExtensions
         services.AddScoped<ITicketService, TicketService>();
         services.AddScoped<ICurrentUser, CurrentUser>();
         return services;
+        
     }
 }

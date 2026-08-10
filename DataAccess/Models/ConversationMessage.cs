@@ -10,6 +10,7 @@ public class ConversationMessage : AuditableEntity
 
     public bool IsSystemGenerated { get; set; }
 
+    public string Body { get; set; } = string.Empty;
     public Conversation Conversation { get; set; } = null!;
 
     public User SenderUser { get; set; } = null!;

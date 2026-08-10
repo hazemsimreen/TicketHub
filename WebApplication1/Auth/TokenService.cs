@@ -49,9 +49,12 @@ public class TokenService : ITokenService
             new("stamp", user.SecurityStamp ?? string.Empty)
         };
 
-        // Role.Code (e.g. "Admin", "Agent", "Citizen") — one claim per role
         foreach (var userRole in user.UserRoles)
-            claims.Add(new Claim("role", userRole.Role.Code));
+        {
+            if (userRole.Role is not null)
+                claims.Add(new Claim("role", userRole.Role.Code));
+        }
+      
 
         if (user.PrimaryDepartmentId is not null)
             claims.Add(new Claim("dept", user.PrimaryDepartmentId.ToString()!));
