@@ -2,11 +2,13 @@
 
 public class Department : AuditableEntity
 {
+    public int Id { get; set; }
+
     public string Code { get; set; } = string.Empty;
 
     public string Name { get; set; } = string.Empty;
 
-    public Guid? ParentDepartmentId { get; set; }
+    public int? ParentDepartmentId { get; set; }
 
     public Department? ParentDepartment { get; set; }
 

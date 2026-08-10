@@ -20,9 +20,9 @@ public class ChatController : ControllerBase
     [HttpPost("tickets/{ticketId}/conversation")]
     public async Task<ActionResult<Guid>> GetOrCreateConversation(Guid ticketId)
     {
-       
+
         var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-      
+
 
         var result = await _chatService.GetOrCreateConversation(ticketId, userId);
 
@@ -30,5 +30,47 @@ public class ChatController : ControllerBase
             return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
 
         return Ok(new { conversationId = result.Data });
+    }
+
+    [HttpGet("conversations/{conversationId}/messages")]
+    public async Task<ActionResult> GetMessages(
+        Guid conversationId,
+        [FromQuery] Guid? before,
+        [FromQuery] int take = 20)
+    {
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.GetMessages(conversationId, userId, before, take);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
+
+        var messages = result.Data!.Select(m => new
+        {
+            id = m.Id,
+            conversationId = m.ConversationId,
+            senderUserId = m.SenderUserId,
+            body = m.Body,
+            createdAt = m.CreatedAt
+        });
+
+        return Ok(messages);
+    }
+    [HttpGet("conversations")]
+    public async Task<ActionResult> GetMyConversations()
+    {
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.GetMyConversations(userId);
+
+        var conversations = result.Data!.Select(c => new
+        {
+            id = c.Id,
+            ticketId = c.TicketId,
+            ticketTitle = c.Ticket.Title,
+            createdAt = c.CreatedAt
+        });
+
+        return Ok(conversations);
     }
 }

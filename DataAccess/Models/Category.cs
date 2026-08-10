@@ -2,13 +2,15 @@
 
 public class Category : AuditableEntity
 {
+    public int Id { get; set; }
+
     public string Name { get; set; } = string.Empty;
 
     public bool IsActive { get; set; } = true;
 
-    public Guid DepartmentId { get; set; }
+    public int DepartmentId { get; set; }
 
-    public Guid? DefaultPriorityId { get; set; }
+    public int? DefaultPriorityId { get; set; }
 
     public Department Department { get; set; } = null!;
 

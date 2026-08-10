@@ -64,7 +64,7 @@ public class DepartmentService : IDepartmentService
     }
 
     public async Task<ServiceResult<DepartmentDto>> GetByIdAsync(
-        Guid id,
+        int id,
         CancellationToken ct = default)
     {
         var department = await _unitOfWork
@@ -188,7 +188,7 @@ public class DepartmentService : IDepartmentService
     }
 
     public async Task<ServiceResult<DepartmentDto>> UpdateAsync(
-        Guid id,
+        int id,
         UpdateDepartmentDto dto,
         CancellationToken ct = default)
     {
@@ -281,7 +281,7 @@ public class DepartmentService : IDepartmentService
     }
 
     public async Task<Result> DeleteAsync(
-        Guid id,
+        int id,
         CancellationToken ct = default)
     {
         var repo = _unitOfWork

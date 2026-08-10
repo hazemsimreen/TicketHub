@@ -1,238 +1,139 @@
-﻿using Contract.Dtos;
+﻿using BusinessLogic.Abstractions;
+using BusinessLogic.ServiceResult;
+using Contract.Dtos;
 using DataAccess.Models;
-using System.Net.Sockets;
-using System.Xml.Linq;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using TicketHub.DataAccess.Repositories;
 
-namespace BusinessLogic.Services
+namespace BusinessLogic.Services;
+
+public class TicketService : ITicketService
 {
-    public class TicketService : ITicketService
+    private readonly IUnitOfWork _uow;
+    private readonly ICurrentUser _currentUser;
+    private readonly UserManager<User> _userManager;
+
+    public TicketService(IUnitOfWork uow, ICurrentUser currentUser, UserManager<User> userManager)
     {
-        private readonly List<Ticket> _tickets =
-            new List<Ticket>
-            {
-                new Ticket
-                {
-                    Id = 1,
-                    Title = "Broken street light",
-                    Description =
-                        "The street light is not working.",
-                    Category =
-                        TicketCategory.Infrastructure,
-                    Priority = "High",
-                    Status = TicketStatus.InProgress,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = null
-                },
+        _uow = uow;
+        _currentUser = currentUser;
+        _userManager = userManager;
+    }
 
-                new Ticket
-                {
-                    Id = 2,
-                    Title = "Garbage collection problem",
-                    Description =
-                        "Garbage has not been collected.",
-                    Category =
-                        TicketCategory.Sanitation,
-                    Priority = "Medium",
-                    Status = TicketStatus.Open,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = null
-                }
-            };
-
-        private readonly List<Comment> _comments =
-            new List<Comment>
-            {
-                new Comment
-                {
-                    Id = 1,
-                    TicketId = 1,
-                    Author = "Citizen",
-                    Text = "The problem is still not fixed.",
-                    CreatedAt = DateTime.UtcNow
-                }
-            };
-
-        public IReadOnlyList<Ticket> GetTickets(
-            TicketStatus? status,
-            TicketCategory? category)
+    public async Task<ServiceResult<TicketDetailDto>> CreateTicketAsync(
+       CreateTicketDto dto,
+       CancellationToken cancellationToken = default)
+    {
+        if (_currentUser.UserId is null ||
+            !Guid.TryParse(_currentUser.UserId, out var submittedByUserId))
         {
-            IEnumerable<Ticket> result = _tickets;
-
-            if (status.HasValue)
-            {
-                result = result.Where(ticket =>
-                    ticket.Status == status.Value);
-            }
-
-            if (category.HasValue)
-            {
-                result = result.Where(ticket =>
-                    ticket.Category == category.Value);
-            }
-
-            return result.ToList();
+            return ServiceResult<TicketDetailDto>.Unauthorized("User is not authenticated.");
         }
 
-        public Ticket? GetTicketById(int id)
+        var category = await _uow.Repository<Category>()
+            .Query()
+            .Include(c => c.Department)
+            .FirstOrDefaultAsync(c => c.Id == dto.CategoryId, cancellationToken);
+
+        if (category is null)
+            return ServiceResult<TicketDetailDto>.NotFound("Category not found.");
+
+        if (category.DefaultPriorityId is null)
+            return ServiceResult<TicketDetailDto>.BadRequest("Category has no default priority configured.");
+
+        var openStatus = await _uow.Repository<TicketStatus>()
+            .Query()
+            .FirstOrDefaultAsync(s => s.Id == 1, cancellationToken);
+
+        if (openStatus is null)
+            return ServiceResult<TicketDetailDto>.BadRequest("Ticket status 'Open' is not configured.");
+
+        var priority = await _uow.Repository<TicketPriority>()
+            .GetByIdAsync(category.DefaultPriorityId.Value, cancellationToken);
+
+        if (priority is null)
+            return ServiceResult<TicketDetailDto>.BadRequest("Default priority for this category is not configured correctly.");
+
+        var submittedByUser = await _userManager.FindByIdAsync(submittedByUserId.ToString());
+
+        if (submittedByUser is null)
+            return ServiceResult<TicketDetailDto>.Unauthorized("User is not authenticated.");
+
+        var ticketNumber = GenerateTicketNumber();
+        var dueAt = DateTime.UtcNow.Add(GetSlaDuration(priority.Code));
+
+        if (string.IsNullOrWhiteSpace(dto.Title))
+            return ServiceResult<TicketDetailDto>.BadRequest("Title is required.");
+
+        var ticket = new Ticket
         {
-            return _tickets.FirstOrDefault(ticket =>
-                ticket.Id == id);
-        }
+            Id = Guid.NewGuid(),
+            TicketNumber = ticketNumber,
+            Title = dto.Title,
+            Description = dto.Description,
+            SubmittedByUserId = submittedByUserId,
+            CategoryId = category.Id,
+            DepartmentId = category.DepartmentId,
+            PriorityId = priority.Id,
+            StatusId = openStatus.Id,
+            DueAt = dueAt,
+            CreatedBy = submittedByUserId.ToString()
+        };
 
-        public Ticket CreateTicket(CreateTicketDto request)
+        var statusHistory = new TicketStatusHistory
         {
-            int newId;
+            Id = Guid.NewGuid(),
+            TicketId = ticket.Id,
+            FromStatusId = null,
+            ToStatusId = openStatus.Id,
+            ChangedByUserId = submittedByUserId
+        };
 
-            if (_tickets.Count == 0)
-            {
-                newId = 1;
-            }
-            else
-            {
-                newId = _tickets.Max(ticket =>
-                    ticket.Id) + 1;
-            }
+        await _uow.Repository<Ticket>().AddAsync(ticket, cancellationToken);
+        await _uow.Repository<TicketStatusHistory>().AddAsync(statusHistory, cancellationToken);
+        await _uow.SaveChangesAsync(cancellationToken);
 
-            var ticket = new Ticket
-            {
-                Id = newId,
-                Title = request.Title,
-                Description = request.Description,
-                Category = request.Category,
-                Priority = request.Priority,
-                Status = TicketStatus.Open,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = null
-            };
-
-            _tickets.Add(ticket);
-
-            return ticket;
-        }
-
-        public Ticket? UpdateTicket(
-            int id,
-            UpdateTicketDto request)
+        var resultDto = new TicketDetailDto
         {
-            var ticket = _tickets.FirstOrDefault(ticket =>
-                ticket.Id == id);
+            Id = ticket.Id,
+            TicketNumber = ticket.TicketNumber,
+            Title = ticket.Title,
+            Description = ticket.Description,
+            StatusCode = openStatus.Code,
+            PriorityCode = priority.Code,
+            CategoryName = category.Name,
+            DepartmentName = category.Department.Name,
+            SubmittedByName = submittedByUser.UserName ?? submittedByUser.Email ?? "Unknown",
+            AssignedToName = null,
+            CreatedAt = ticket.CreatedAt,
+            DueAt = ticket.DueAt,
+            IsOverdue = false,
+            RowVersion = Convert.ToBase64String(ticket.RowVersion)
+        };
 
-            if (ticket == null)
-            {
-                return null;
-            }
+        return ServiceResult<TicketDetailDto>.Success(resultDto);
+    }
 
-            ticket.Title = request.Title;
-            ticket.Description = request.Description;
-            ticket.Category = request.Category;
-            ticket.Priority = request.Priority;
-            ticket.UpdatedAt = DateTime.UtcNow;
+    private static string GenerateTicketNumber()
+    {
+        var datePart = DateTime.UtcNow.ToString("yyyyMMdd");
+        var randomPart = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
+        return $"TKT-{datePart}-{randomPart}";
+    }
 
-            return ticket;
-        }
-
-        public Ticket? UpdateTicketStatus(
-            int id,
-            TicketStatus status)
+    private static TimeSpan GetSlaDuration(string priorityCode)
+    {
+        return priorityCode switch
         {
-            var ticket = _tickets.FirstOrDefault(ticket =>
-                ticket.Id == id);
-
-            if (ticket == null)
-            {
-                return null;
-            }
-
-            ticket.Status = status;
-            ticket.UpdatedAt = DateTime.UtcNow;
-
-            return ticket;
-        }
-
-        public bool DeleteTicket(int id)
-        {
-            var ticket = _tickets.FirstOrDefault(ticket =>
-                ticket.Id == id);
-
-            if (ticket == null)
-            {
-                return false;
-            }
-
-            _tickets.Remove(ticket);
-
-            _comments.RemoveAll(comment =>
-                comment.TicketId == id);
-
-            return true;
-        }
-
-        public IReadOnlyList<Comment>? GetComments(
-            int ticketId)
-        {
-            var ticketExists = _tickets.Any(ticket =>
-                ticket.Id == ticketId);
-
-            if (!ticketExists)
-            {
-                return null;
-            }
-
-            return _comments
-                .Where(comment =>
-                    comment.TicketId == ticketId)
-                .ToList();
-        }
-
-        public Comment? AddComment(
-            int ticketId,
-            CreateCommentDto request)
-        {
-            var ticketExists = _tickets.Any(ticket =>
-                ticket.Id == ticketId);
-
-            if (!ticketExists)
-            {
-                return null;
-            }
-
-            int newCommentId;
-
-            if (_comments.Count == 0)
-            {
-                newCommentId = 1;
-            }
-            else
-            {
-                newCommentId = _comments.Max(comment =>
-                    comment.Id) + 1;
-            }
-
-            var comment = new Comment
-            {
-                Id = newCommentId,
-                TicketId = ticketId,
-                Author = request.Author,
-                Text = request.Text,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _comments.Add(comment);
-
-            return comment;
-        }
-
-        public IReadOnlyList<CategorySummary> GetCategories()
-        {
-            return Enum.GetValues<TicketCategory>()
-                .Select(category => new CategorySummary
-                {
-                    Category = category.ToString(),
-
-                    TicketCount = _tickets.Count(ticket =>
-                        ticket.Category == category)
-                })
-                .ToList();
-        }
+            "Urgent" => TimeSpan.FromHours(4),
+            "High" => TimeSpan.FromHours(24),
+            "Medium" => TimeSpan.FromHours(72),
+            "Low" => TimeSpan.FromHours(168),
+            _ => TimeSpan.FromHours(72)
+        };
     }
 }

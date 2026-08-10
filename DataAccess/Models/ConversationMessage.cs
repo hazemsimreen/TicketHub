@@ -2,8 +2,8 @@
 
 public class ConversationMessage : AuditableEntity
 {
-    
 
+    public Guid Id { get; set; }
     public Guid ConversationId { get; set; }
 
     public Guid SenderUserId { get; set; }

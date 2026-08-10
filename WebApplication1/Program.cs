@@ -1,15 +1,15 @@
 using API.Auth;
+using BusinessLogic.Abstractions;
+using BusinessLogic.Extensions;
 using DataAccess.Context;
+using DataAccess.Extensions;
 using DataAccess.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
-using BusinessLogic.Extensions;
-using DataAccess.Extensions;
-using WebApplication1.Hubs;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using BusinessLogic.Abstractions;
+using System.Text;
+using WebApplication1.Hubs;
 using WebApplication1.Realtime;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,9 +23,6 @@ builder.Services.AddSignalR();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
-
-builder.Services.AddScoped<DbContext>(
-    sp => sp.GetRequiredService<AppDbContext>());
 
 builder.Services
     .AddIdentityCore<User>()
@@ -80,6 +77,23 @@ builder.Services
 
         options.Events = new JwtBearerEvents
         {
+            OnMessageReceived = context =>
+            {
+                var accessToken =
+                    context.Request.Query["access_token"];
+
+                var path =
+                    context.HttpContext.Request.Path;
+
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            },
+
             OnTokenValidated = async context =>
             {
                 var sub = context.Principal?
@@ -90,7 +104,9 @@ builder.Services
                     .FindFirst("stamp")?
                     .Value;
 
-                if (!Guid.TryParse(sub, out var userId) ||
+                if (!Guid.TryParse(
+                        sub,
+                        out var userId) ||
                     string.IsNullOrWhiteSpace(stamp))
                 {
                     context.Fail("Invalid token.");

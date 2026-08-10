@@ -12,7 +12,7 @@ public class CreateDepartmentDto
     [StringLength(150)]
     public string Name { get; set; } = string.Empty;
 
-    public Guid? ParentDepartmentId { get; set; }
+    public int? ParentDepartmentId { get; set; }
 }
 
 public class UpdateDepartmentDto
@@ -25,18 +25,18 @@ public class UpdateDepartmentDto
     [StringLength(150)]
     public string Name { get; set; } = string.Empty;
 
-    public Guid? ParentDepartmentId { get; set; }
+    public int? ParentDepartmentId { get; set; }
 }
 
 public class DepartmentDto
 {
-    public Guid Id { get; set; }
+    public int Id { get; set; }
 
     public string Code { get; set; } = string.Empty;
 
     public string Name { get; set; } = string.Empty;
 
-    public Guid? ParentDepartmentId { get; set; }
+    public int? ParentDepartmentId { get; set; }
 
     public int CategoryCount { get; set; }
 

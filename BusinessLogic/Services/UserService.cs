@@ -481,10 +481,10 @@ public class UserService : IUserService
 
         foreach (var role in roles)
         {
-            Guid? departmentId =
-                role.IsDepartmentScoped
-                    ? dto.DepartmentId
-                    : null;
+            int? departmentId =
+    role.IsDepartmentScoped
+        ? dto.DepartmentId
+        : null;
 
             var existingUserRole =
                 existingUserRoles

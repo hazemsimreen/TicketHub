@@ -2,7 +2,9 @@
 
 public class AgentProfile : AuditableEntity
 {
-    public Guid AgentId { get; set; }
+    public int Id { get; set; }
+
+    public int AgentId { get; set; }
 
     public int MaxOpenTickets { get; set; } = 10;
 

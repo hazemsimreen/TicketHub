@@ -8,16 +8,16 @@ public interface ICategoryService
 {
     Task<ServiceResult<PagedResult<CategoryDto>>> GetAllAsync(
         PagedQuery query,
-        Guid? departmentId = null,
+        int? departmentId = null,
         bool? active = null,
         CancellationToken ct = default);
 
     Task<ServiceResult<IReadOnlyList<CategoryLookupDto>>> GetLookupAsync(
-        Guid? departmentId = null,
+        int? departmentId = null,
         CancellationToken ct = default);
 
     Task<ServiceResult<CategoryDto>> GetByIdAsync(
-        Guid id,
+        int id,
         CancellationToken ct = default);
 
     Task<ServiceResult<CategoryDto>> CreateAsync(
@@ -25,11 +25,11 @@ public interface ICategoryService
         CancellationToken ct = default);
 
     Task<ServiceResult<CategoryDto>> UpdateAsync(
-        Guid id,
+        int id,
         UpdateCategoryDto dto,
         CancellationToken ct = default);
 
     Task<Result> DeleteAsync(
-        Guid id,
+        int id,
         CancellationToken ct = default);
 }

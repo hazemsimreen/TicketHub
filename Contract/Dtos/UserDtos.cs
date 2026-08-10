@@ -16,7 +16,7 @@ public class CreateUserDto
     [StringLength(20)]
     public string? PhoneNumber { get; set; }
 
-    public Guid? DepartmentId { get; set; }
+    public int? DepartmentId { get; set; }
 
     public List<string> Roles { get; set; }
         = new List<string>();
@@ -32,7 +32,7 @@ public class UpdateUserDto
     [StringLength(20)]
     public string? PhoneNumber { get; set; }
 
-    public Guid? DepartmentId { get; set; }
+    public int? DepartmentId { get; set; }
 
     public List<string> Roles { get; set; }
         = new List<string>();
@@ -55,7 +55,7 @@ public class UserDto
 
     public string? PhoneNumber { get; set; }
 
-    public Guid? DepartmentId { get; set; }
+    public int? DepartmentId { get; set; }
 
     public string? DepartmentName { get; set; }
 

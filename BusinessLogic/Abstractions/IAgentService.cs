@@ -7,14 +7,14 @@ namespace BusinessLogic.Abstractions;
 public interface IAgentService
 {
     Task<ServiceResult<IReadOnlyList<AgentDto>>> GetAllAsync(
-        Guid? departmentId = null,
+        int? departmentId = null,
         bool? active = null,
         bool? hasCapacity = null,
         string? skill = null,
         CancellationToken ct = default);
 
     Task<ServiceResult<AgentDto>> GetByIdAsync(
-        Guid id,
+        int id,
         CancellationToken ct = default);
 
     Task<ServiceResult<AgentDto>> GetByUserIdAsync(
@@ -26,12 +26,12 @@ public interface IAgentService
         CancellationToken ct = default);
 
     Task<ServiceResult<AgentDto>> UpdateAsync(
-        Guid id,
+        int id,
         UpdateAgentDto dto,
         CancellationToken ct = default);
 
     Task<ServiceResult<AgentDto>> UpdateProfileAsync(
-        Guid id,
+        int id,
         UpdateAgentProfileDto dto,
         CancellationToken ct = default);
 
@@ -39,6 +39,6 @@ public interface IAgentService
         CancellationToken ct = default);
 
     Task<Result> DeleteAsync(
-        Guid id,
+        int id,
         CancellationToken ct = default);
 }

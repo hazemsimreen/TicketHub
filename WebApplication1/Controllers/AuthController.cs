@@ -1,10 +1,10 @@
 using API.Auth;
 using Contract.Dtos;
-using DataAccess.Models;
 using DataAccess.Context;
+using DataAccess.Models;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebApplication1.Controllers;
 
@@ -12,8 +12,7 @@ namespace WebApplication1.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private static readonly Guid CitizenRoleId =
-        Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private const int CitizenRoleId = 1;
 
     private readonly UserManager<User> _userManager;
     private readonly ITokenService _tokens;
@@ -30,7 +29,8 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest req)
+    public async Task<ActionResult<AuthResponse>> Register(
+        RegisterRequest req)
     {
         var user = new User
         {
@@ -39,10 +39,14 @@ public class AuthController : ControllerBase
             UserType = "Citizen"
         };
 
-        var result = await _userManager.CreateAsync(user, req.Password);
+        var result = await _userManager.CreateAsync(
+            user,
+            req.Password);
 
         if (!result.Succeeded)
+        {
             return BadRequest(result.Errors);
+        }
 
         _db.Set<UserRole>().Add(new UserRole
         {
@@ -52,20 +56,23 @@ public class AuthController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        user.UserRoles.Add(new UserRole
-        {
-            RoleId = CitizenRoleId,
-            Role = new Role
-            {
-                Code = "Citizen"
-            }
-        });
+        var (accessToken, expires) =
+            _tokens.CreateAccessToken(user);
 
-        return Ok(BuildAuthResponse(user));
+        var refreshToken =
+            _tokens.CreateRefreshToken();
+
+        return Ok(new AuthResponse(
+            accessToken,
+            refreshToken,
+            expires,
+            user.Email ?? string.Empty,
+            new List<string> { "Citizen" }));
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponse>> Login(LoginRequest req)
+    public async Task<ActionResult<AuthResponse>> Login(
+        LoginRequest req)
     {
         var user = await _userManager.Users
             .Include(u => u.UserRoles)
@@ -74,7 +81,9 @@ public class AuthController : ControllerBase
 
         if (user is null ||
             !user.IsActive ||
-            !await _userManager.CheckPasswordAsync(user, req.Password))
+            !await _userManager.CheckPasswordAsync(
+                user,
+                req.Password))
         {
             return Unauthorized(new
             {
@@ -94,7 +103,9 @@ public class AuthController : ControllerBase
             _tokens.CreateRefreshToken();
 
         var roles = user.UserRoles
-            .Where(ur => !ur.IsDeleted && ur.Role is not null)
+            .Where(ur =>
+                !ur.IsDeleted &&
+                ur.Role is not null)
             .Select(ur => ur.Role!.Code)
             .Distinct()
             .ToList();

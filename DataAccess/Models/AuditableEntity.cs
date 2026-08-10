@@ -1,12 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace DataAccess.Models
 {
-    public class AuditableEntity 
+    public class AuditableEntity
     {
-        public Guid Id { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public string? CreatedBy { get; set; }

@@ -2,7 +2,7 @@
 
 public class TicketTransfer : AuditableEntity
 {
-   
+    public Guid Id { get; set; }
     public Guid TicketId { get; set; }
 
     public Guid OriginStepInstanceId { get; set; }
@@ -11,7 +11,7 @@ public class TicketTransfer : AuditableEntity
 
     public Guid? ToUserId { get; set; }
 
-    public Guid? ToDepartmentId { get; set; }
+    public int? ToDepartmentId { get; set; }
 
     public string Status { get; set; } = string.Empty;
 

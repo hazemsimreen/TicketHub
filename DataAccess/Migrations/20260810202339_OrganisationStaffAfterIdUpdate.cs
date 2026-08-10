@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace DataAccess.Migrations
 {
     /// <inheritdoc />
-    public partial class OrganisationStaff : Migration
+    public partial class OrganisationStaffAfterIdUpdate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -26,10 +26,10 @@ namespace DataAccess.Migrations
                 nullable: false,
                 defaultValue: true);
 
-            migrationBuilder.AddColumn<Guid>(
+            migrationBuilder.AddColumn<int>(
                 name: "AssignedAgentId",
                 table: "Tickets",
-                type: "uniqueidentifier",
+                type: "int",
                 nullable: true);
 
             migrationBuilder.AlterColumn<string>(
@@ -70,9 +70,10 @@ namespace DataAccess.Migrations
                 name: "Agents",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    DepartmentId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    DepartmentId = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -102,7 +103,8 @@ namespace DataAccess.Migrations
                 name: "Skills",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -121,8 +123,9 @@ namespace DataAccess.Migrations
                 name: "AgentProfiles",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    AgentId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    AgentId = table.Column<int>(type: "int", nullable: false),
                     MaxOpenTickets = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -147,8 +150,8 @@ namespace DataAccess.Migrations
                 name: "AgentSkills",
                 columns: table => new
                 {
-                    AgentsId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    SkillsId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    AgentsId = table.Column<int>(type: "int", nullable: false),
+                    SkillsId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -170,9 +173,19 @@ namespace DataAccess.Migrations
             migrationBuilder.UpdateData(
                 table: "Categories",
                 keyColumn: "Id",
-                keyValue: new Guid("c0000000-0000-0000-0000-000000000001"),
+                keyValue: 1,
                 column: "IsActive",
                 value: true);
+
+            migrationBuilder.InsertData(
+                table: "Roles",
+                columns: new[] { "Id", "Code", "CreatedAt", "CreatedBy", "DeletedAt", "DeletedBy", "IsDeleted", "IsDepartmentScoped", "UpdatedAt", "UpdatedBy" },
+                values: new object[] { 4, "Supervisor", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, false, true, null, null });
+
+            migrationBuilder.InsertData(
+                table: "Skills",
+                columns: new[] { "Id", "CreatedAt", "CreatedBy", "DeletedAt", "DeletedBy", "IsDeleted", "Name", "UpdatedAt", "UpdatedBy" },
+                values: new object[] { 1, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, false, "Electrical", null, null });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tickets_AssignedAgentId",
@@ -258,6 +271,11 @@ namespace DataAccess.Migrations
             migrationBuilder.DropIndex(
                 name: "IX_Categories_DepartmentId_Name",
                 table: "Categories");
+
+            migrationBuilder.DeleteData(
+                table: "Roles",
+                keyColumn: "Id",
+                keyValue: 4);
 
             migrationBuilder.DropColumn(
                 name: "IsActive",

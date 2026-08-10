@@ -23,7 +23,7 @@ public class AgentService : IAgentService
     }
 
     public async Task<ServiceResult<IReadOnlyList<AgentDto>>> GetAllAsync(
-        Guid? departmentId = null,
+        int? departmentId = null,
         bool? active = null,
         bool? hasCapacity = null,
         string? skill = null,
@@ -144,7 +144,7 @@ public class AgentService : IAgentService
     }
 
     public async Task<ServiceResult<AgentDto>> GetByIdAsync(
-        Guid id,
+        int id,
         CancellationToken ct = default)
     {
         var agent = await _unitOfWork
@@ -221,7 +221,7 @@ public class AgentService : IAgentService
             .Where(a =>
                 a.UserId == userId &&
                 !a.IsDeleted)
-            .Select(a => (Guid?)a.Id)
+            .Select(a => (int?)a.Id)
             .FirstOrDefaultAsync(ct);
 
         if (!agentId.HasValue)
@@ -331,7 +331,7 @@ public class AgentService : IAgentService
     }
 
     public async Task<ServiceResult<AgentDto>> UpdateAsync(
-        Guid id,
+        int id,
         UpdateAgentDto dto,
         CancellationToken ct = default)
     {
@@ -412,7 +412,7 @@ public class AgentService : IAgentService
     }
 
     public async Task<ServiceResult<AgentDto>> UpdateProfileAsync(
-        Guid id,
+        int id,
         UpdateAgentProfileDto dto,
         CancellationToken ct = default)
     {
@@ -496,7 +496,7 @@ public class AgentService : IAgentService
     }
 
     public async Task<Result> DeleteAsync(
-        Guid id,
+        int id,
         CancellationToken ct = default)
     {
         var agentRepo =

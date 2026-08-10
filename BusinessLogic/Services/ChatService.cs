@@ -12,9 +12,14 @@ public interface IChatService
         Guid senderUserId,
         string body,
         CancellationToken ct = default);
-    
+
     Task<ServiceResult<Guid>> GetOrCreateConversation(
         Guid ticketId, Guid requestingUserId, CancellationToken ct = default);
+
+    Task<ServiceResult<List<ConversationMessage>>> GetMessages(
+        Guid conversationId, Guid userId, Guid? beforeMessageId, int take = 20, CancellationToken ct = default);
+
+    Task<ServiceResult<List<Conversation>>> GetMyConversations(Guid userId, CancellationToken ct = default);
 }
 
 public class ChatService : IChatService
@@ -65,7 +70,7 @@ public class ChatService : IChatService
 
         return ServiceResult<ConversationMessage>.Created(message);
     }
-    
+
     public async Task<ServiceResult<Guid>> GetOrCreateConversation(
         Guid ticketId, Guid userId, CancellationToken ct = default)
     {
@@ -96,5 +101,67 @@ public class ChatService : IChatService
         await _uow.SaveChangesAsync(ct);
 
         return ServiceResult<Guid>.Success(conversation.Id);
+    }
+
+
+    public async Task<ServiceResult<List<ConversationMessage>>> GetMessages(
+        Guid conversationId, Guid userId, Guid? beforeMessageId, int take = 20, CancellationToken ct = default)
+    {
+        var conversation = await _uow.Repository<Conversation>()
+            .Query()
+            .Include(c => c.Ticket)
+            .FirstOrDefaultAsync(c => c.Id == conversationId, ct);
+
+        if (conversation is null)
+            return ServiceResult<List<ConversationMessage>>.NotFound("Conversation not found.");
+
+        var canAccess = conversation.Ticket.SubmittedByUserId == userId
+                        || await _uow.Repository<UserRole>()
+                            .Query()
+                            .AnyAsync(ur => ur.UserId == userId && ur.DepartmentId == conversation.Ticket.DepartmentId, ct);
+
+
+        if (!canAccess)
+            return ServiceResult<List<ConversationMessage>>.NotFound("Conversation not found.");
+
+        var query = _uow.Repository<ConversationMessage>()
+            .Query()
+            .Where(m => m.ConversationId == conversationId);
+
+        if (beforeMessageId is not null)
+        {
+            var cursor = await _uow.Repository<ConversationMessage>()
+                .Query()
+                .FirstOrDefaultAsync(m => m.Id == beforeMessageId, ct);
+
+            if (cursor is not null)
+                query = query.Where(m => m.CreatedAt < cursor.CreatedAt);
+        }
+
+        var messages = await query
+            .OrderByDescending(m => m.CreatedAt)
+            .Take(take)
+            .ToListAsync(ct);
+
+        return ServiceResult<List<ConversationMessage>>.Success(messages);
+    }
+
+    public async Task<ServiceResult<List<Conversation>>> GetMyConversations(Guid userId, CancellationToken ct = default)
+    {
+        var myDepartmentIds = await _uow.Repository<UserRole>()
+            .Query()
+            .Where(ur => ur.UserId == userId && ur.DepartmentId != null)
+            .Select(ur => ur.DepartmentId!.Value)
+            .ToListAsync(ct);
+
+        var conversations = await _uow.Repository<Conversation>()
+            .Query()
+            .Include(c => c.Ticket)
+            .Where(c => c.Ticket.SubmittedByUserId == userId
+                        || myDepartmentIds.Contains(c.Ticket.DepartmentId))
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync(ct);
+
+        return ServiceResult<List<Conversation>>.Success(conversations);
     }
 }

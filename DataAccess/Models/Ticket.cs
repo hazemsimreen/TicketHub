@@ -1,26 +1,39 @@
-﻿namespace DataAccess.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace DataAccess.Models;
 
 public class Ticket : AuditableEntity
 {
+    public Guid Id { get; set; }
+
     public string TicketNumber { get; set; } = string.Empty;
 
     public string Title { get; set; } = null!;
+
+    public Guid? AssignedToUserId { get; set; }
+
+    public User? AssignedToUser { get; set; }
 
     public string Description { get; set; } = string.Empty;
 
     public Guid SubmittedByUserId { get; set; }
 
-    public Guid CategoryId { get; set; }
+    public int CategoryId { get; set; }
 
-    public Guid DepartmentId { get; set; }
+    public int DepartmentId { get; set; }
 
-    public Guid PriorityId { get; set; }
+    public int PriorityId { get; set; }
 
-    public Guid StatusId { get; set; }
+    public int StatusId { get; set; }
 
-    public Guid? AssignedAgentId { get; set; }
+    public int? AssignedAgentId { get; set; }
 
     public DateTime? ResolvedAt { get; set; }
+
+    public DateTime? DueAt { get; set; }
+
+    [Timestamp]
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     public User SubmittedByUser { get; set; } = null!;
 

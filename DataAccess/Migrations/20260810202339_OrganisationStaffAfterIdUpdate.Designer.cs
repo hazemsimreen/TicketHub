@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260810152609_Role2FinalSeed")]
-    partial class Role2FinalSeed
+    [Migration("20260810202339_OrganisationStaffAfterIdUpdate")]
+    partial class OrganisationStaffAfterIdUpdate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,11 +27,11 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("AgentSkill", b =>
                 {
-                    b.Property<Guid>("AgentsId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("AgentsId")
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("SkillsId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("SkillsId")
+                        .HasColumnType("int");
 
                     b.HasKey("AgentsId", "SkillsId");
 
@@ -42,9 +42,11 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("DataAccess.Models.Agent", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -58,8 +60,8 @@ namespace DataAccess.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("DepartmentId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -85,12 +87,14 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("DataAccess.Models.AgentProfile", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("AgentId")
-                        .HasColumnType("uniqueidentifier");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AgentId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -177,9 +181,11 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("DataAccess.Models.Category", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -187,8 +193,8 @@ namespace DataAccess.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("DefaultPriorityId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("DefaultPriorityId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
@@ -196,8 +202,8 @@ namespace DataAccess.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("DepartmentId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -230,10 +236,10 @@ namespace DataAccess.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("c0000000-0000-0000-0000-000000000001"),
+                            Id = 1,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DefaultPriorityId = new Guid("a0000000-0000-0000-0000-000000000002"),
-                            DepartmentId = new Guid("d0000000-0000-0000-0000-000000000001"),
+                            DefaultPriorityId = 2,
+                            DepartmentId = 1,
                             IsActive = true,
                             IsDeleted = false,
                             Name = "General"
@@ -375,9 +381,11 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("DataAccess.Models.Department", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Code")
                         .IsRequired()
@@ -404,8 +412,8 @@ namespace DataAccess.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
-                    b.Property<Guid?>("ParentDepartmentId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("ParentDepartmentId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -428,7 +436,7 @@ namespace DataAccess.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("d0000000-0000-0000-0000-000000000001"),
+                            Id = 1,
                             Code = "IT",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -531,9 +539,11 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("DataAccess.Models.Role", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Code")
                         .IsRequired()
@@ -573,7 +583,7 @@ namespace DataAccess.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            Id = 1,
                             Code = "Citizen",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -581,7 +591,7 @@ namespace DataAccess.Migrations
                         },
                         new
                         {
-                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            Id = 2,
                             Code = "Agent",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -589,7 +599,7 @@ namespace DataAccess.Migrations
                         },
                         new
                         {
-                            Id = new Guid("44444444-4444-4444-4444-444444444444"),
+                            Id = 4,
                             Code = "Supervisor",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -597,7 +607,7 @@ namespace DataAccess.Migrations
                         },
                         new
                         {
-                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
+                            Id = 3,
                             Code = "Admin",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -607,9 +617,11 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("DataAccess.Models.Skill", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -647,7 +659,7 @@ namespace DataAccess.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("e0000000-0000-0000-0000-000000000001"),
+                            Id = 1,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             Name = "Electrical"
@@ -660,11 +672,14 @@ namespace DataAccess.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("AssignedAgentId")
+                    b.Property<int?>("AssignedAgentId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("AssignedToUserId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -678,24 +693,33 @@ namespace DataAccess.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("DepartmentId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("DueAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<Guid>("PriorityId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("PriorityId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("ResolvedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("StatusId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("StatusId")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("SubmittedByUserId")
                         .HasColumnType("uniqueidentifier");
@@ -717,6 +741,8 @@ namespace DataAccess.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AssignedAgentId");
+
+                    b.HasIndex("AssignedToUserId");
 
                     b.HasIndex("CategoryId");
 
@@ -841,9 +867,11 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("DataAccess.Models.TicketPriority", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Code")
                         .IsRequired()
@@ -864,8 +892,8 @@ namespace DataAccess.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<Guid>("SortOrder")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -883,19 +911,21 @@ namespace DataAccess.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Id = 2,
                             Code = "Normal",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
-                            SortOrder = new Guid("00000000-0000-0000-0000-000000000001")
+                            SortOrder = 1
                         });
                 });
 
             modelBuilder.Entity("DataAccess.Models.TicketStatus", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Code")
                         .IsRequired()
@@ -935,7 +965,7 @@ namespace DataAccess.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("a0000000-0000-0000-0000-000000000003"),
+                            Id = 3,
                             Code = "Open",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
@@ -964,8 +994,8 @@ namespace DataAccess.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("FromStatusId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("FromStatusId")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -973,8 +1003,8 @@ namespace DataAccess.Migrations
                     b.Property<Guid>("TicketId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("ToStatusId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("ToStatusId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1029,8 +1059,8 @@ namespace DataAccess.Migrations
                     b.Property<Guid>("TicketId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("ToDepartmentId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("ToDepartmentId")
+                        .HasColumnType("int");
 
                     b.Property<Guid?>("ToUserId")
                         .HasColumnType("uniqueidentifier");
@@ -1162,8 +1192,8 @@ namespace DataAccess.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<Guid?>("PrimaryDepartmentId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("PrimaryDepartmentId")
+                        .HasColumnType("int");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
@@ -1206,9 +1236,11 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("DataAccess.Models.UserRole", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -1222,14 +1254,14 @@ namespace DataAccess.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("DepartmentId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("DepartmentId")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1259,8 +1291,8 @@ namespace DataAccess.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("CategoryId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("CategoryId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -1274,8 +1306,8 @@ namespace DataAccess.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("DepartmentId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsDefault")
                         .HasColumnType("bit");
@@ -1375,8 +1407,8 @@ namespace DataAccess.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<Guid?>("RoleId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("RoleId")
+                        .HasColumnType("int");
 
                     b.Property<int>("StepOrder")
                         .HasColumnType("int");
@@ -1765,6 +1797,11 @@ namespace DataAccess.Migrations
                         .HasForeignKey("AssignedAgentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("DataAccess.Models.User", "AssignedToUser")
+                        .WithMany("AssignedTickets")
+                        .HasForeignKey("AssignedToUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("DataAccess.Models.Category", "Category")
                         .WithMany("Tickets")
                         .HasForeignKey("CategoryId")
@@ -1796,6 +1833,8 @@ namespace DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("AssignedAgent");
+
+                    b.Navigation("AssignedToUser");
 
                     b.Navigation("Category");
 
@@ -2232,6 +2271,8 @@ namespace DataAccess.Migrations
             modelBuilder.Entity("DataAccess.Models.User", b =>
                 {
                     b.Navigation("AssignedStepInstances");
+
+                    b.Navigation("AssignedTickets");
 
                     b.Navigation("AssignedWorkflowSteps");
 

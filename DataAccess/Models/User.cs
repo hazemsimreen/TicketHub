@@ -22,7 +22,7 @@ public class User : IdentityUser<Guid>
 
     public string UserType { get; set; } = string.Empty;
 
-    public Guid? PrimaryDepartmentId { get; set; }
+    public int? PrimaryDepartmentId { get; set; }
 
     public Department? PrimaryDepartment { get; set; }
 
@@ -64,4 +64,7 @@ public class User : IdentityUser<Guid>
 
     public ICollection<Notification> Notifications { get; set; }
         = new List<Notification>();
+
+    public ICollection<Ticket> AssignedTickets { get; set; }
+        = new List<Ticket>();
 }

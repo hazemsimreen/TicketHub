@@ -2,8 +2,8 @@
 
 public class TicketComment : AuditableEntity
 {
-    
 
+    public Guid Id { get; set; }
     public Guid TicketId { get; set; }
 
     public Guid AuthorUserId { get; set; }

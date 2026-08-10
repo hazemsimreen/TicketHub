@@ -126,8 +126,7 @@ public class AppDbContext
             entity.HasData(
                 new Department
                 {
-                    Id = Guid.Parse(
-                        "d0000000-0000-0000-0000-000000000001"),
+                    Id = 1,
                     Code = "IT",
                     Name = "IT Support",
                     CreatedAt = new DateTime(
@@ -158,8 +157,7 @@ public class AppDbContext
             entity.HasData(
                 new Role
                 {
-                    Id = Guid.Parse(
-                        "11111111-1111-1111-1111-111111111111"),
+                    Id = 1,
                     Code = "Citizen",
                     IsDepartmentScoped = false,
                     CreatedAt = new DateTime(
@@ -174,8 +172,7 @@ public class AppDbContext
 
                 new Role
                 {
-                    Id = Guid.Parse(
-                        "22222222-2222-2222-2222-222222222222"),
+                    Id = 2,
                     Code = "Agent",
                     IsDepartmentScoped = true,
                     CreatedAt = new DateTime(
@@ -190,8 +187,7 @@ public class AppDbContext
 
                 new Role
                 {
-                    Id = Guid.Parse(
-                        "44444444-4444-4444-4444-444444444444"),
+                    Id = 4,
                     Code = "Supervisor",
                     IsDepartmentScoped = true,
                     CreatedAt = new DateTime(
@@ -206,8 +202,7 @@ public class AppDbContext
 
                 new Role
                 {
-                    Id = Guid.Parse(
-                        "33333333-3333-3333-3333-333333333333"),
+                    Id = 3,
                     Code = "Admin",
                     IsDepartmentScoped = false,
                     CreatedAt = new DateTime(
@@ -272,11 +267,9 @@ public class AppDbContext
             entity.HasData(
                 new TicketPriority
                 {
-                    Id = Guid.Parse(
-                        "a0000000-0000-0000-0000-000000000002"),
+                    Id = 2,
                     Code = "Normal",
-                    SortOrder = Guid.Parse(
-                        "00000000-0000-0000-0000-000000000001"),
+                    SortOrder = 1,
                     CreatedAt = new DateTime(
                         2026,
                         1,
@@ -305,8 +298,7 @@ public class AppDbContext
             entity.HasData(
                 new TicketStatus
                 {
-                    Id = Guid.Parse(
-                        "a0000000-0000-0000-0000-000000000003"),
+                    Id = 3,
                     Code = "Open",
                     IsTerminal = false,
                     CreatedAt = new DateTime(
@@ -358,13 +350,10 @@ public class AppDbContext
             entity.HasData(
                 new Category
                 {
-                    Id = Guid.Parse(
-                        "c0000000-0000-0000-0000-000000000001"),
+                    Id = 1,
                     Name = "General",
-                    DepartmentId = Guid.Parse(
-                        "d0000000-0000-0000-0000-000000000001"),
-                    DefaultPriorityId = Guid.Parse(
-                        "a0000000-0000-0000-0000-000000000002"),
+                    DepartmentId = 1,
+                    DefaultPriorityId = 2,
                     IsActive = true,
                     CreatedAt = new DateTime(
                         2026,
@@ -445,8 +434,7 @@ public class AppDbContext
             entity.HasData(
                 new Skill
                 {
-                    Id = Guid.Parse(
-                        "e0000000-0000-0000-0000-000000000001"),
+                    Id = 1,
                     Name = "Electrical",
                     CreatedAt = new DateTime(
                         2026,
@@ -503,6 +491,11 @@ public class AppDbContext
             entity.HasOne(x => x.AssignedAgent)
                 .WithMany(x => x.AssignedTickets)
                 .HasForeignKey(x => x.AssignedAgentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.AssignedToUser)
+                .WithMany(x => x.AssignedTickets)
+                .HasForeignKey(x => x.AssignedToUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

@@ -11,7 +11,7 @@ public interface IDepartmentService
         CancellationToken ct = default);
 
     Task<ServiceResult<DepartmentDto>> GetByIdAsync(
-        Guid id,
+        int id,
         CancellationToken ct = default);
 
     Task<ServiceResult<DepartmentDto>> CreateAsync(
@@ -19,11 +19,11 @@ public interface IDepartmentService
         CancellationToken ct = default);
 
     Task<ServiceResult<DepartmentDto>> UpdateAsync(
-        Guid id,
+        int id,
         UpdateDepartmentDto dto,
         CancellationToken ct = default);
 
     Task<Result> DeleteAsync(
-        Guid id,
+        int id,
         CancellationToken ct = default);
 }

@@ -25,7 +25,7 @@ public class CategoriesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll(
         [FromQuery] PagedQuery query,
-        [FromQuery] Guid? departmentId,
+        [FromQuery] int? departmentId,
         [FromQuery] bool? active,
         CancellationToken ct)
     {
@@ -52,7 +52,7 @@ public class CategoriesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetLookup(
-        [FromQuery] Guid? departmentId,
+        [FromQuery] int? departmentId,
         CancellationToken ct)
     {
         var result = await _service.GetLookupAsync(
@@ -72,12 +72,12 @@ public class CategoriesController : ControllerBase
         return Ok(result.Data);
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
-        Guid id,
+        int id,
         CancellationToken ct)
     {
         var result = await _service.GetByIdAsync(
@@ -132,7 +132,7 @@ public class CategoriesController : ControllerBase
             result.Data);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut("{id:int}")]
     [Authorize(Roles = "Admin,Supervisor")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -141,7 +141,7 @@ public class CategoriesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(
-        Guid id,
+        int id,
         [FromBody] UpdateCategoryDto dto,
         CancellationToken ct)
     {
@@ -163,7 +163,7 @@ public class CategoriesController : ControllerBase
         return Ok(result.Data);
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{id:int}")]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -171,7 +171,7 @@ public class CategoriesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(
-        Guid id,
+        int id,
         CancellationToken ct)
     {
         var result = await _service.DeleteAsync(

@@ -19,7 +19,7 @@ public class CategoryService : ICategoryService
 
     public async Task<ServiceResult<PagedResult<CategoryDto>>> GetAllAsync(
         PagedQuery query,
-        Guid? departmentId = null,
+        int? departmentId = null,
         bool? active = null,
         CancellationToken ct = default)
     {
@@ -32,42 +32,31 @@ public class CategoryService : ICategoryService
         if (departmentId.HasValue)
         {
             categories = categories.Where(
-                c =>
-                    c.DepartmentId ==
-                    departmentId.Value);
+                c => c.DepartmentId == departmentId.Value);
         }
 
         if (active.HasValue)
         {
             categories = categories.Where(
-                c =>
-                    c.IsActive ==
-                    active.Value);
+                c => c.IsActive == active.Value);
         }
 
-        categories =
-            categories.OrderBy(c => c.Name);
+        categories = categories.OrderBy(c => c.Name);
 
         var totalCount =
             await categories.CountAsync(ct);
 
         var items = await categories
-            .Skip(
-                (query.Page - 1) *
-                query.PageSize)
+            .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize)
             .Select(c => new CategoryDto
             {
                 Id = c.Id,
                 Name = c.Name,
-                DepartmentId =
-                    c.DepartmentId,
-                DepartmentName =
-                    c.Department.Name,
-                DefaultPriorityId =
-                    c.DefaultPriorityId,
-                IsActive =
-                    c.IsActive
+                DepartmentId = c.DepartmentId,
+                DepartmentName = c.Department.Name,
+                DefaultPriorityId = c.DefaultPriorityId,
+                IsActive = c.IsActive
             })
             .ToListAsync(ct);
 
@@ -83,7 +72,7 @@ public class CategoryService : ICategoryService
     }
 
     public async Task<ServiceResult<IReadOnlyList<CategoryLookupDto>>> GetLookupAsync(
-        Guid? departmentId = null,
+        int? departmentId = null,
         CancellationToken ct = default)
     {
         var categories = _unitOfWork
@@ -97,20 +86,17 @@ public class CategoryService : ICategoryService
         if (departmentId.HasValue)
         {
             categories = categories.Where(
-                c =>
-                    c.DepartmentId ==
-                    departmentId.Value);
+                c => c.DepartmentId == departmentId.Value);
         }
 
         IReadOnlyList<CategoryLookupDto> items =
             await categories
                 .OrderBy(c => c.Name)
-                .Select(c =>
-                    new CategoryLookupDto
-                    {
-                        Id = c.Id,
-                        Name = c.Name
-                    })
+                .Select(c => new CategoryLookupDto
+                {
+                    Id = c.Id,
+                    Name = c.Name
+                })
                 .ToListAsync(ct);
 
         return ServiceResult<IReadOnlyList<CategoryLookupDto>>
@@ -118,7 +104,7 @@ public class CategoryService : ICategoryService
     }
 
     public async Task<ServiceResult<CategoryDto>> GetByIdAsync(
-        Guid id,
+        int id,
         CancellationToken ct = default)
     {
         var category = await _unitOfWork
@@ -132,22 +118,17 @@ public class CategoryService : ICategoryService
             {
                 Id = c.Id,
                 Name = c.Name,
-                DepartmentId =
-                    c.DepartmentId,
-                DepartmentName =
-                    c.Department.Name,
-                DefaultPriorityId =
-                    c.DefaultPriorityId,
-                IsActive =
-                    c.IsActive
+                DepartmentId = c.DepartmentId,
+                DepartmentName = c.Department.Name,
+                DefaultPriorityId = c.DefaultPriorityId,
+                IsActive = c.IsActive
             })
             .FirstOrDefaultAsync(ct);
 
         if (category is null)
         {
             return ServiceResult<CategoryDto>
-                .NotFound(
-                    "Category not found.");
+                .NotFound("Category not found.");
         }
 
         return ServiceResult<CategoryDto>
@@ -161,16 +142,14 @@ public class CategoryService : ICategoryService
         var categoryRepo =
             _unitOfWork.Repository<Category>();
 
-        var name =
-            dto.Name.Trim();
+        var name = dto.Name.Trim();
 
         var departmentExists =
             await _unitOfWork
                 .Repository<Department>()
                 .ExistsAsync(
                     d =>
-                        d.Id ==
-                            dto.DepartmentId &&
+                        d.Id == dto.DepartmentId &&
                         !d.IsDeleted,
                     ct);
 
@@ -184,8 +163,7 @@ public class CategoryService : ICategoryService
         var nameExists =
             await categoryRepo.ExistsAsync(
                 c =>
-                    c.DepartmentId ==
-                        dto.DepartmentId &&
+                    c.DepartmentId == dto.DepartmentId &&
                     c.Name == name &&
                     !c.IsDeleted,
                 ct);
@@ -205,7 +183,7 @@ public class CategoryService : ICategoryService
                     .ExistsAsync(
                         p =>
                             p.Id ==
-                                dto.DefaultPriorityId.Value &&
+                            dto.DefaultPriorityId.Value &&
                             !p.IsDeleted,
                         ct);
 
@@ -220,8 +198,7 @@ public class CategoryService : ICategoryService
         var category = new Category
         {
             Name = name,
-            DepartmentId =
-                dto.DepartmentId,
+            DepartmentId = dto.DepartmentId,
             DefaultPriorityId =
                 dto.DefaultPriorityId,
             IsActive = true
@@ -252,7 +229,7 @@ public class CategoryService : ICategoryService
     }
 
     public async Task<ServiceResult<CategoryDto>> UpdateAsync(
-        Guid id,
+        int id,
         UpdateCategoryDto dto,
         CancellationToken ct = default)
     {
@@ -280,8 +257,7 @@ public class CategoryService : ICategoryService
                 .Repository<Department>()
                 .ExistsAsync(
                     d =>
-                        d.Id ==
-                            dto.DepartmentId &&
+                        d.Id == dto.DepartmentId &&
                         !d.IsDeleted,
                     ct);
 
@@ -292,15 +268,13 @@ public class CategoryService : ICategoryService
                     "Department does not exist.");
         }
 
-        var name =
-            dto.Name.Trim();
+        var name = dto.Name.Trim();
 
         var nameExists =
             await categoryRepo.ExistsAsync(
                 c =>
                     c.Id != id &&
-                    c.DepartmentId ==
-                        dto.DepartmentId &&
+                    c.DepartmentId == dto.DepartmentId &&
                     c.Name == name &&
                     !c.IsDeleted,
                 ct);
@@ -320,7 +294,7 @@ public class CategoryService : ICategoryService
                     .ExistsAsync(
                         p =>
                             p.Id ==
-                                dto.DefaultPriorityId.Value &&
+                            dto.DefaultPriorityId.Value &&
                             !p.IsDeleted,
                         ct);
 
@@ -332,15 +306,11 @@ public class CategoryService : ICategoryService
             }
         }
 
-        category.Name =
-            name;
-
+        category.Name = name;
         category.DepartmentId =
             dto.DepartmentId;
-
         category.DefaultPriorityId =
             dto.DefaultPriorityId;
-
         category.IsActive =
             dto.IsActive;
 
@@ -355,7 +325,7 @@ public class CategoryService : ICategoryService
     }
 
     public async Task<Result> DeleteAsync(
-        Guid id,
+        int id,
         CancellationToken ct = default)
     {
         var categoryRepo =
@@ -382,8 +352,7 @@ public class CategoryService : ICategoryService
                 .Query()
                 .IgnoreQueryFilters()
                 .AnyAsync(
-                    t =>
-                        t.CategoryId == id,
+                    t => t.CategoryId == id,
                     ct);
 
         if (hasTickets)
