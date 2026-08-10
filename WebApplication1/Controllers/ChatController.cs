@@ -104,6 +104,29 @@ public class ChatController : ControllerBase
 
         return StatusCode(StatusCodes.Status201Created, response);
     }
+    
+    [HttpPatch("conversations/{conversationId}/read")]
+    public async Task<ActionResult> MarkConversationAsRead(
+        Guid conversationId)
+    {
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.MarkConversationAsReadAsync(
+            conversationId,
+            userId);
+
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
+
+        return Ok(new
+        {
+            conversationId,
+            lastReadAt = result.Data
+        });
+    }
     public class SendMessageRequest
     {
         public string Body { get; set; } = string.Empty;
