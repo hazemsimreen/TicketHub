@@ -4,6 +4,7 @@ using Contract.Dtos;
 using DataAccess.Models;
 using Microsoft.EntityFrameworkCore;
 using TicketHub.DataAccess.Repositories;
+using Result = BusinessLogic.ServiceResult.ServiceResult;
 
 namespace BusinessLogic.Services;
 
@@ -46,8 +47,9 @@ public class DepartmentService : IDepartmentService
                     .Count(a => !a.IsDeleted),
 
                 OpenTicketCount = d.Tickets
-                    .Count(t => !t.IsDeleted &&
-                                !t.Status.IsTerminal)
+                    .Count(t =>
+                        !t.IsDeleted &&
+                        !t.Status.IsTerminal)
             })
             .ToListAsync(ct);
 
@@ -69,7 +71,9 @@ public class DepartmentService : IDepartmentService
             .Repository<Department>()
             .Query()
             .AsNoTracking()
-            .Where(d => d.Id == id && !d.IsDeleted)
+            .Where(d =>
+                d.Id == id &&
+                !d.IsDeleted)
             .Select(d => new DepartmentDto
             {
                 Id = d.Id,
@@ -84,14 +88,17 @@ public class DepartmentService : IDepartmentService
                     .Count(a => !a.IsDeleted),
 
                 OpenTicketCount = d.Tickets
-                    .Count(t => !t.IsDeleted &&
-                                !t.Status.IsTerminal)
+                    .Count(t =>
+                        !t.IsDeleted &&
+                        !t.Status.IsTerminal)
             })
             .FirstOrDefaultAsync(ct);
 
         if (department is null)
+        {
             return ServiceResult<DepartmentDto>
                 .NotFound("Department not found.");
+        }
 
         return ServiceResult<DepartmentDto>
             .Success(department);
@@ -101,56 +108,79 @@ public class DepartmentService : IDepartmentService
         CreateDepartmentDto dto,
         CancellationToken ct = default)
     {
-        var repo = _unitOfWork.Repository<Department>();
+        var repo = _unitOfWork
+            .Repository<Department>();
 
         var name = dto.Name.Trim();
         var code = dto.Code.Trim();
 
         var nameExists = await repo.ExistsAsync(
-            d => d.Name == name,
+            d =>
+                d.Name == name &&
+                !d.IsDeleted,
             ct);
 
         if (nameExists)
+        {
             return ServiceResult<DepartmentDto>
-                .Conflict("Department name already exists.");
+                .Conflict(
+                    "Department name already exists.");
+        }
 
         var codeExists = await repo.ExistsAsync(
-            d => d.Code == code,
+            d =>
+                d.Code == code &&
+                !d.IsDeleted,
             ct);
 
         if (codeExists)
+        {
             return ServiceResult<DepartmentDto>
-                .Conflict("Department code already exists.");
+                .Conflict(
+                    "Department code already exists.");
+        }
 
         if (dto.ParentDepartmentId.HasValue)
         {
             var parentExists = await repo.ExistsAsync(
-                d => d.Id == dto.ParentDepartmentId.Value &&
-                     !d.IsDeleted,
+                d =>
+                    d.Id == dto.ParentDepartmentId.Value &&
+                    !d.IsDeleted,
                 ct);
 
             if (!parentExists)
+            {
                 return ServiceResult<DepartmentDto>
-                    .BadRequest("Parent department does not exist.");
+                    .BadRequest(
+                        "Parent department does not exist.");
+            }
         }
 
         var department = new Department
         {
             Code = code,
             Name = name,
-            ParentDepartmentId = dto.ParentDepartmentId
+            ParentDepartmentId =
+                dto.ParentDepartmentId
         };
 
-        await repo.AddAsync(department, ct);
+        await repo.AddAsync(
+            department,
+            ct);
 
-        await _unitOfWork.SaveChangesAsync(ct);
+        await _unitOfWork
+            .SaveChangesAsync(ct);
 
         var result = new DepartmentDto
         {
             Id = department.Id,
             Code = department.Code,
             Name = department.Name,
-            ParentDepartmentId = department.ParentDepartmentId
+            ParentDepartmentId =
+                department.ParentDepartmentId,
+            CategoryCount = 0,
+            AgentCount = 0,
+            OpenTicketCount = 0
         };
 
         return ServiceResult<DepartmentDto>
@@ -162,55 +192,77 @@ public class DepartmentService : IDepartmentService
         UpdateDepartmentDto dto,
         CancellationToken ct = default)
     {
-        var repo = _unitOfWork.Repository<Department>();
+        var repo = _unitOfWork
+            .Repository<Department>();
 
         var department = await repo
             .Query()
             .FirstOrDefaultAsync(
-                d => d.Id == id && !d.IsDeleted,
+                d =>
+                    d.Id == id &&
+                    !d.IsDeleted,
                 ct);
 
         if (department is null)
+        {
             return ServiceResult<DepartmentDto>
-                .NotFound("Department not found.");
+                .NotFound(
+                    "Department not found.");
+        }
 
         var name = dto.Name.Trim();
         var code = dto.Code.Trim();
 
         var nameExists = await repo.ExistsAsync(
-            d => d.Id != id &&
-                 d.Name == name,
+            d =>
+                d.Id != id &&
+                d.Name == name &&
+                !d.IsDeleted,
             ct);
 
         if (nameExists)
+        {
             return ServiceResult<DepartmentDto>
-                .Conflict("Department name already exists.");
+                .Conflict(
+                    "Department name already exists.");
+        }
 
         var codeExists = await repo.ExistsAsync(
-            d => d.Id != id &&
-                 d.Code == code,
+            d =>
+                d.Id != id &&
+                d.Code == code &&
+                !d.IsDeleted,
             ct);
 
         if (codeExists)
+        {
             return ServiceResult<DepartmentDto>
-                .Conflict("Department code already exists.");
+                .Conflict(
+                    "Department code already exists.");
+        }
 
         if (dto.ParentDepartmentId == id)
+        {
             return ServiceResult<DepartmentDto>
                 .BadRequest(
                     "A department cannot be its own parent.");
+        }
 
         if (dto.ParentDepartmentId.HasValue)
         {
             var parentExists = await repo.ExistsAsync(
-                d => d.Id == dto.ParentDepartmentId.Value &&
-                     !d.IsDeleted,
+                d =>
+                    d.Id ==
+                        dto.ParentDepartmentId.Value &&
+                    !d.IsDeleted,
                 ct);
 
             if (!parentExists)
+            {
                 return ServiceResult<DepartmentDto>
                     .BadRequest(
                         "Parent department does not exist.");
+            }
         }
 
         department.Code = code;
@@ -220,53 +272,55 @@ public class DepartmentService : IDepartmentService
 
         repo.Update(department);
 
-        await _unitOfWork.SaveChangesAsync(ct);
+        await _unitOfWork
+            .SaveChangesAsync(ct);
 
-        var result = new DepartmentDto
-        {
-            Id = department.Id,
-            Code = department.Code,
-            Name = department.Name,
-            ParentDepartmentId =
-                department.ParentDepartmentId
-        };
-
-        return ServiceResult<DepartmentDto>
-            .Success(result);
+        return await GetByIdAsync(
+            id,
+            ct);
     }
 
-    public async Task<ServiceResult> DeleteAsync(
+    public async Task<Result> DeleteAsync(
         Guid id,
         CancellationToken ct = default)
     {
-        var repo = _unitOfWork.Repository<Department>();
+        var repo = _unitOfWork
+            .Repository<Department>();
 
         var department = await repo
             .Query()
             .FirstOrDefaultAsync(
-                d => d.Id == id && !d.IsDeleted,
+                d =>
+                    d.Id == id &&
+                    !d.IsDeleted,
                 ct);
 
         if (department is null)
-            return ServiceResult
-                .NotFound("Department not found.");
+        {
+            return Result.NotFound(
+                "Department not found.");
+        }
 
         var hasCategories = await _unitOfWork
             .Repository<Category>()
             .Query()
             .AnyAsync(
-                c => c.DepartmentId == id &&
-                     !c.IsDeleted,
+                c =>
+                    c.DepartmentId == id &&
+                    !c.IsDeleted,
                 ct);
 
         if (hasCategories)
-            return ServiceResult.Conflict(
+        {
+            return Result.Conflict(
                 "Department still has categories. Move or deactivate them first.");
+        }
 
         repo.Remove(department);
 
-        await _unitOfWork.SaveChangesAsync(ct);
+        await _unitOfWork
+            .SaveChangesAsync(ct);
 
-        return ServiceResult.NoContent();
+        return Result.NoContent();
     }
 }

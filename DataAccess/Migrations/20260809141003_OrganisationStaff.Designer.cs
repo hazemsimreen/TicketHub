@@ -4,6 +4,7 @@ using DataAccess.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260809141003_OrganisationStaff")]
+    partial class OrganisationStaff
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -586,14 +589,6 @@ namespace DataAccess.Migrations
                         },
                         new
                         {
-                            Id = new Guid("44444444-4444-4444-4444-444444444444"),
-                            Code = "Supervisor",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            IsDepartmentScoped = true
-                        },
-                        new
-                        {
                             Id = new Guid("33333333-3333-3333-3333-333333333333"),
                             Code = "Admin",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -640,15 +635,6 @@ namespace DataAccess.Migrations
                         .IsUnique();
 
                     b.ToTable("Skills", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("e0000000-0000-0000-0000-000000000001"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            Name = "Electrical"
-                        });
                 });
 
             modelBuilder.Entity("DataAccess.Models.Ticket", b =>

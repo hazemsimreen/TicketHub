@@ -12,13 +12,17 @@ namespace WebApplication1.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private static readonly Guid CitizenRoleId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid CitizenRoleId =
+        Guid.Parse("11111111-1111-1111-1111-111111111111");
 
     private readonly UserManager<User> _userManager;
     private readonly ITokenService _tokens;
     private readonly AppDbContext _db;
 
-    public AuthController(UserManager<User> userManager, ITokenService tokens, AppDbContext db)
+    public AuthController(
+        UserManager<User> userManager,
+        ITokenService tokens,
+        AppDbContext db)
     {
         _userManager = userManager;
         _tokens = tokens;
@@ -40,10 +44,22 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
-        _db.Set<UserRole>().Add(new UserRole { UserId = user.Id, RoleId = CitizenRoleId });
+        _db.Set<UserRole>().Add(new UserRole
+        {
+            UserId = user.Id,
+            RoleId = CitizenRoleId
+        });
+
         await _db.SaveChangesAsync();
 
-        user.UserRoles.Add(new UserRole { RoleId = CitizenRoleId, Role = new Role { Code = "Citizen" } });
+        user.UserRoles.Add(new UserRole
+        {
+            RoleId = CitizenRoleId,
+            Role = new Role
+            {
+                Code = "Citizen"
+            }
+        });
 
         return Ok(BuildAuthResponse(user));
     }
@@ -52,25 +68,42 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest req)
     {
         var user = await _userManager.Users
-            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Email == req.Email);
 
-        if (user is null || !await _userManager.CheckPasswordAsync(user, req.Password))
-            return Unauthorized(new { message = "Invalid email or password." });
+        if (user is null ||
+            !user.IsActive ||
+            !await _userManager.CheckPasswordAsync(user, req.Password))
+        {
+            return Unauthorized(new
+            {
+                message = "Invalid email or password."
+            });
+        }
 
         return Ok(BuildAuthResponse(user));
     }
 
     private AuthResponse BuildAuthResponse(User user)
     {
-        var (accessToken, expires) = _tokens.CreateAccessToken(user);
-        var refreshToken = _tokens.CreateRefreshToken();
+        var (accessToken, expires) =
+            _tokens.CreateAccessToken(user);
+
+        var refreshToken =
+            _tokens.CreateRefreshToken();
 
         var roles = user.UserRoles
-            .Where(ur => ur.Role is not null)
-            .Select(ur => ur.Role.Code)
+            .Where(ur => !ur.IsDeleted && ur.Role is not null)
+            .Select(ur => ur.Role!.Code)
+            .Distinct()
             .ToList();
 
-        return new AuthResponse(accessToken, refreshToken, expires, user.Email ?? string.Empty, roles);
+        return new AuthResponse(
+            accessToken,
+            refreshToken,
+            expires,
+            user.Email ?? string.Empty,
+            roles);
     }
 }

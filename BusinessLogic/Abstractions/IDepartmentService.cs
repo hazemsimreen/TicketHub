@@ -1,5 +1,6 @@
 ﻿using BusinessLogic.ServiceResult;
 using Contract.Dtos;
+using Result = BusinessLogic.ServiceResult.ServiceResult;
 
 namespace BusinessLogic.Abstractions;
 
@@ -22,7 +23,7 @@ public interface IDepartmentService
         UpdateDepartmentDto dto,
         CancellationToken ct = default);
 
-    Task<ServiceResult> DeleteAsync(
+    Task<Result> DeleteAsync(
         Guid id,
         CancellationToken ct = default);
 }

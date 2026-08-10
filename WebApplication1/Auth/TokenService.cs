@@ -49,12 +49,14 @@ public class TokenService : ITokenService
             new("stamp", user.SecurityStamp ?? string.Empty)
         };
 
-        foreach (var userRole in user.UserRoles)
+        foreach (var roleCode in user.UserRoles
+     .Where(x => !x.IsDeleted && x.Role is not null)
+     .Select(x => x.Role!.Code)
+     .Distinct())
         {
-            if (userRole.Role is not null)
-                claims.Add(new Claim("role", userRole.Role.Code));
+            claims.Add(new Claim("role", roleCode));
         }
-      
+
 
         if (user.PrimaryDepartmentId is not null)
             claims.Add(new Claim("dept", user.PrimaryDepartmentId.ToString()!));

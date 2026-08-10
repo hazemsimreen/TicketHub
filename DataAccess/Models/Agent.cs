@@ -14,4 +14,7 @@ public class Agent : AuditableEntity
 
     public ICollection<Skill> Skills { get; set; }
         = new List<Skill>();
+
+    public ICollection<Ticket> AssignedTickets { get; set; }
+        = new List<Ticket>();
 }

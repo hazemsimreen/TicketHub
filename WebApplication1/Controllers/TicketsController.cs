@@ -420,7 +420,7 @@ public class TicketsController : ControllerBase
             response);
     }
 
-    [HttpGet("/api/categories")]
+    [HttpGet("categories")]
     public async Task<ActionResult<IEnumerable<CategorySummaryResponse>>>
         GetCategories()
     {

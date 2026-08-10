@@ -2,11 +2,9 @@
 
 public class Ticket : AuditableEntity
 {
-
-
     public string TicketNumber { get; set; } = string.Empty;
 
-    public string Title { get; set; }=null!;
+    public string Title { get; set; } = null!;
 
     public string Description { get; set; } = string.Empty;
 
@@ -20,6 +18,8 @@ public class Ticket : AuditableEntity
 
     public Guid StatusId { get; set; }
 
+    public Guid? AssignedAgentId { get; set; }
+
     public DateTime? ResolvedAt { get; set; }
 
     public User SubmittedByUser { get; set; } = null!;
@@ -31,6 +31,8 @@ public class Ticket : AuditableEntity
     public TicketPriority Priority { get; set; } = null!;
 
     public TicketStatus Status { get; set; } = null!;
+
+    public Agent? AssignedAgent { get; set; }
 
     public Conversation? Conversation { get; set; }
 

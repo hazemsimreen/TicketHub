@@ -14,17 +14,23 @@ public class AppDbContext
     }
 
     public DbSet<Department> Departments => Set<Department>();
-    public DbSet<Role> Roles => Set<Role>();
-    public DbSet<UserRole> UserRoles => Set<UserRole>();
+    public new DbSet<Role> Roles => Set<Role>();
+    public new DbSet<UserRole> UserRoles => Set<UserRole>();
 
     public DbSet<TicketPriority> TicketPriorities => Set<TicketPriority>();
     public DbSet<TicketStatus> TicketStatuses => Set<TicketStatus>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Ticket> Tickets => Set<Ticket>();
 
+    public DbSet<Agent> Agents => Set<Agent>();
+    public DbSet<AgentProfile> AgentProfiles => Set<AgentProfile>();
+    public DbSet<Skill> Skills => Set<Skill>();
+
     public DbSet<Conversation> Conversations => Set<Conversation>();
+
     public DbSet<ConversationParticipant> ConversationParticipants =>
         Set<ConversationParticipant>();
+
     public DbSet<ConversationMessage> ConversationMessages =>
         Set<ConversationMessage>();
 
@@ -76,6 +82,9 @@ public class AppDbContext
             entity.Property(x => x.Id)
                 .ValueGeneratedOnAdd();
 
+            entity.Property(x => x.IsActive)
+                .HasDefaultValue(true);
+
             entity.HasIndex(x => x.Email)
                 .IsUnique();
 
@@ -95,20 +104,40 @@ public class AppDbContext
 
             entity.HasKey(x => x.Id);
 
+            entity.Property(x => x.Code)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(x => x.Name)
+                .HasMaxLength(150)
+                .IsRequired();
+
             entity.HasIndex(x => x.Code)
+                .IsUnique();
+
+            entity.HasIndex(x => x.Name)
                 .IsUnique();
 
             entity.HasOne(x => x.ParentDepartment)
                 .WithMany(x => x.ChildDepartments)
                 .HasForeignKey(x => x.ParentDepartmentId)
                 .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasData(
                 new Department
                 {
-                    Id = Guid.Parse("d0000000-0000-0000-0000-000000000001"),
+                    Id = Guid.Parse(
+                        "d0000000-0000-0000-0000-000000000001"),
                     Code = "IT",
                     Name = "IT Support",
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    CreatedAt = new DateTime(
+                        2026,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        DateTimeKind.Utc)
                 }
             );
         });
@@ -125,13 +154,72 @@ public class AppDbContext
 
             entity.HasIndex(x => x.Code)
                 .IsUnique();
-            entity.HasData(
-                new Role { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), Code = "Citizen", IsDepartmentScoped = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new Role { Id = Guid.Parse("22222222-2222-2222-2222-222222222222"), Code = "Agent", IsDepartmentScoped = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new Role { Id = Guid.Parse("33333333-3333-3333-3333-333333333333"), Code = "Admin", IsDepartmentScoped = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
-            );
 
-            
+            entity.HasData(
+                new Role
+                {
+                    Id = Guid.Parse(
+                        "11111111-1111-1111-1111-111111111111"),
+                    Code = "Citizen",
+                    IsDepartmentScoped = false,
+                    CreatedAt = new DateTime(
+                        2026,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        DateTimeKind.Utc)
+                },
+
+                new Role
+                {
+                    Id = Guid.Parse(
+                        "22222222-2222-2222-2222-222222222222"),
+                    Code = "Agent",
+                    IsDepartmentScoped = true,
+                    CreatedAt = new DateTime(
+                        2026,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        DateTimeKind.Utc)
+                },
+
+                new Role
+                {
+                    Id = Guid.Parse(
+                        "44444444-4444-4444-4444-444444444444"),
+                    Code = "Supervisor",
+                    IsDepartmentScoped = true,
+                    CreatedAt = new DateTime(
+                        2026,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        DateTimeKind.Utc)
+                },
+
+                new Role
+                {
+                    Id = Guid.Parse(
+                        "33333333-3333-3333-3333-333333333333"),
+                    Code = "Admin",
+                    IsDepartmentScoped = false,
+                    CreatedAt = new DateTime(
+                        2026,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        DateTimeKind.Utc)
+                }
+            );
         });
 
         // =========================================================
@@ -180,13 +268,23 @@ public class AppDbContext
 
             entity.HasIndex(x => x.Code)
                 .IsUnique();
+
             entity.HasData(
                 new TicketPriority
                 {
-                    Id = Guid.Parse("a0000000-0000-0000-0000-000000000002"),
+                    Id = Guid.Parse(
+                        "a0000000-0000-0000-0000-000000000002"),
                     Code = "Normal",
-                    SortOrder = Guid.Parse("00000000-0000-0000-0000-000000000001"),
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    SortOrder = Guid.Parse(
+                        "00000000-0000-0000-0000-000000000001"),
+                    CreatedAt = new DateTime(
+                        2026,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        DateTimeKind.Utc)
                 }
             );
         });
@@ -203,13 +301,22 @@ public class AppDbContext
 
             entity.HasIndex(x => x.Code)
                 .IsUnique();
+
             entity.HasData(
                 new TicketStatus
                 {
-                    Id = Guid.Parse("a0000000-0000-0000-0000-000000000003"),
+                    Id = Guid.Parse(
+                        "a0000000-0000-0000-0000-000000000003"),
                     Code = "Open",
                     IsTerminal = false,
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    CreatedAt = new DateTime(
+                        2026,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        DateTimeKind.Utc)
                 }
             );
         });
@@ -224,8 +331,19 @@ public class AppDbContext
 
             entity.HasKey(x => x.Id);
 
-            entity.HasIndex(x => x.Name)
-                .IsUnique();
+            entity.Property(x => x.Name)
+                .HasMaxLength(150)
+                .IsRequired();
+
+            entity.Property(x => x.IsActive)
+                .HasDefaultValue(true);
+
+            entity.HasIndex(x => new
+            {
+                x.DepartmentId,
+                x.Name
+            })
+            .IsUnique();
 
             entity.HasOne(x => x.Department)
                 .WithMany(x => x.Categories)
@@ -236,14 +354,108 @@ public class AppDbContext
                 .WithMany(x => x.DefaultCategories)
                 .HasForeignKey(x => x.DefaultPriorityId)
                 .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasData(
                 new Category
                 {
-                    Id = Guid.Parse("c0000000-0000-0000-0000-000000000001"),
+                    Id = Guid.Parse(
+                        "c0000000-0000-0000-0000-000000000001"),
                     Name = "General",
-                    DepartmentId = Guid.Parse("d0000000-0000-0000-0000-000000000001"),
-                    DefaultPriorityId = Guid.Parse("a0000000-0000-0000-0000-000000000002"),
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    DepartmentId = Guid.Parse(
+                        "d0000000-0000-0000-0000-000000000001"),
+                    DefaultPriorityId = Guid.Parse(
+                        "a0000000-0000-0000-0000-000000000002"),
+                    IsActive = true,
+                    CreatedAt = new DateTime(
+                        2026,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        DateTimeKind.Utc)
+                }
+            );
+        });
+
+        // =========================================================
+        // Agent
+        // =========================================================
+
+        modelBuilder.Entity<Agent>(entity =>
+        {
+            entity.ToTable("Agents");
+
+            entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => x.UserId)
+                .IsUnique();
+
+            entity.HasOne(x => x.User)
+                .WithOne()
+                .HasForeignKey<Agent>(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Department)
+                .WithMany(x => x.Agents)
+                .HasForeignKey(x => x.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Skills)
+                .WithMany(x => x.Agents)
+                .UsingEntity(j => j.ToTable("AgentSkills"));
+        });
+
+        // =========================================================
+        // AgentProfile
+        // =========================================================
+
+        modelBuilder.Entity<AgentProfile>(entity =>
+        {
+            entity.ToTable("AgentProfiles");
+
+            entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => x.AgentId)
+                .IsUnique();
+
+            entity.HasOne(x => x.Agent)
+                .WithOne(x => x.Profile)
+                .HasForeignKey<AgentProfile>(x => x.AgentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // =========================================================
+        // Skill
+        // =========================================================
+
+        modelBuilder.Entity<Skill>(entity =>
+        {
+            entity.ToTable("Skills");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.HasIndex(x => x.Name)
+                .IsUnique();
+
+            entity.HasData(
+                new Skill
+                {
+                    Id = Guid.Parse(
+                        "e0000000-0000-0000-0000-000000000001"),
+                    Name = "Electrical",
+                    CreatedAt = new DateTime(
+                        2026,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        DateTimeKind.Utc)
                 }
             );
         });
@@ -286,6 +498,11 @@ public class AppDbContext
             entity.HasOne(x => x.Status)
                 .WithMany(x => x.Tickets)
                 .HasForeignKey(x => x.StatusId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.AssignedAgent)
+                .WithMany(x => x.AssignedTickets)
+                .HasForeignKey(x => x.AssignedAgentId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
