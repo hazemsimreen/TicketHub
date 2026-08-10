@@ -3,12 +3,12 @@
 public class WorkflowDefinition : AuditableEntity
 {
 
-
+    public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
 
-    public Guid DepartmentId { get; set; }
+    public int DepartmentId { get; set; }
 
-    public Guid? CategoryId { get; set; }
+    public int? CategoryId { get; set; }
 
     public int Version { get; set; }
 

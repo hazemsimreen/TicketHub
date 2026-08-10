@@ -243,6 +243,12 @@ public class AppDbContext
                 .WithMany(x => x.Tickets)
                 .HasForeignKey(x => x.StatusId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // جديد — علاقة الإسناد (Assign)، اختيارية (nullable FK)
+            entity.HasOne(x => x.AssignedToUser)
+                .WithMany(x => x.AssignedTickets)
+                .HasForeignKey(x => x.AssignedToUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // =========================================================

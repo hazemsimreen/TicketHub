@@ -1,5 +1,10 @@
-﻿using DataAccess.Context;
+﻿using API.Auth;
+using BusinessLogic.Abstractions;
+using BusinessLogic.ServiceResult;
+using Contract.Dtos;
+using DataAccess.Context;
 using DataAccess.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,16 +15,18 @@ namespace WebApplication1.Controllers;
 public class TicketsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly ITicketService _ticketService;
 
-    public TicketsController(AppDbContext db)
+    public TicketsController(AppDbContext db, ITicketService ticketService)
     {
         _db = db;
+        _ticketService = ticketService;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<TicketResponse>>> GetTickets(
-        [FromQuery] Guid? statusId,
-        [FromQuery] Guid? categoryId)
+        [FromQuery] int? statusId,
+        [FromQuery] int? categoryId)
     {
         IQueryable<Ticket> query = _db.Tickets.AsNoTracking();
 
@@ -90,8 +97,10 @@ public class TicketsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<TicketResponse>> CreateTicket(
-        [FromBody] CreateTicketRequest request)
+    [Authorize]
+    public async Task<ActionResult<TicketDetailDto>> CreateTicket(
+       [FromBody] CreateTicketRequest request,
+       CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Title) ||
             string.IsNullOrWhiteSpace(request.Description))
@@ -99,106 +108,24 @@ public class TicketsController : ControllerBase
             return BadRequest("Title and Description are required.");
         }
 
-        var userExists = await _db.Users
-            .AnyAsync(user => user.Id == request.SubmittedByUserId);
-
-        if (!userExists)
+        var dto = new CreateTicketDto
         {
-            return BadRequest("Submitted user was not found.");
-        }
-
-        var categoryExists = await _db.Categories
-            .AnyAsync(category => category.Id == request.CategoryId);
-
-        if (!categoryExists)
-        {
-            return BadRequest("Category was not found.");
-        }
-
-        var departmentExists = await _db.Departments
-            .AnyAsync(department => department.Id == request.DepartmentId);
-
-        if (!departmentExists)
-        {
-            return BadRequest("Department was not found.");
-        }
-
-        var priorityExists = await _db.TicketPriorities
-            .AnyAsync(priority => priority.Id == request.PriorityId);
-
-        if (!priorityExists)
-        {
-            return BadRequest("Priority was not found.");
-        }
-
-        Guid statusId;
-
-        if (request.StatusId.HasValue)
-        {
-            var statusExists = await _db.TicketStatuses
-                .AnyAsync(status => status.Id == request.StatusId.Value);
-
-            if (!statusExists)
-            {
-                return BadRequest("Status was not found.");
-            }
-
-            statusId = request.StatusId.Value;
-        }
-        else
-        {
-            var openStatus = await _db.TicketStatuses
-                .AsNoTracking()
-                .FirstOrDefaultAsync(status => status.Code == "Open");
-
-            if (openStatus == null)
-            {
-                return BadRequest(
-                    "The Open status does not exist in the database.");
-            }
-
-            statusId = openStatus.Id;
-        }
-
-        var ticketNumber = string.IsNullOrWhiteSpace(request.TicketNumber)
-            ? $"TKT-{DateTime.UtcNow:yyyyMMddHHmmssfff}"
-            : request.TicketNumber.Trim();
-
-        var numberExists = await _db.Tickets
-            .IgnoreQueryFilters()
-            .AnyAsync(ticket =>
-                ticket.TicketNumber == ticketNumber);
-
-        if (numberExists)
-        {
-            return BadRequest("Ticket number already exists.");
-        }
-
-        var ticket = new Ticket
-        {
-            TicketNumber = ticketNumber,
             Title = request.Title.Trim(),
             Description = request.Description.Trim(),
-            SubmittedByUserId = request.SubmittedByUserId,
-            CategoryId = request.CategoryId,
-            DepartmentId = request.DepartmentId,
-            PriorityId = request.PriorityId,
-            StatusId = statusId,
-            IsDeleted = false,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = null,
-            ResolvedAt = null
+            CategoryId = request.CategoryId
         };
 
-        _db.Tickets.Add(ticket);
-        await _db.SaveChangesAsync();
+        var result = await _ticketService.CreateTicketAsync(dto, cancellationToken);
 
-        var response = MapTicket(ticket);
+        if (!result.IsSuccess)
+        {
+            return StatusCode(result.StatusCode, result.ErrorMessage);
+        }
 
         return CreatedAtAction(
             nameof(GetTicketById),
-            new { id = ticket.Id },
-            response);
+            new { id = result.Data!.Id },
+            result.Data);
     }
 
     [HttpPut("{id:guid}")]
@@ -460,21 +387,11 @@ public class TicketsController : ControllerBase
 
 public class CreateTicketRequest
 {
-    public string? TicketNumber { get; set; }
-
     public string Title { get; set; } = string.Empty;
 
     public string Description { get; set; } = string.Empty;
 
-    public Guid SubmittedByUserId { get; set; }
-
-    public Guid CategoryId { get; set; }
-
-    public Guid DepartmentId { get; set; }
-
-    public Guid PriorityId { get; set; }
-
-    public Guid? StatusId { get; set; }
+    public int CategoryId { get; set; }
 }
 
 public class UpdateTicketRequest
@@ -483,16 +400,16 @@ public class UpdateTicketRequest
 
     public string Description { get; set; } = string.Empty;
 
-    public Guid CategoryId { get; set; }
+    public int CategoryId { get; set; }
 
-    public Guid DepartmentId { get; set; }
+    public int DepartmentId { get; set; }
 
-    public Guid PriorityId { get; set; }
+    public int PriorityId { get; set; }
 }
 
 public class UpdateTicketStatusRequest
 {
-    public Guid StatusId { get; set; }
+    public int StatusId { get; set; }
 }
 
 public class CreateCommentRequest
@@ -520,13 +437,13 @@ public class TicketResponse
 
     public Guid SubmittedByUserId { get; set; }
 
-    public Guid CategoryId { get; set; }
+    public int CategoryId { get; set; }
 
-    public Guid DepartmentId { get; set; }
+    public int DepartmentId { get; set; }
 
-    public Guid PriorityId { get; set; }
+    public int PriorityId { get; set; }
 
-    public Guid StatusId { get; set; }
+    public int StatusId { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -556,7 +473,7 @@ public class CommentResponse
 
 public class CategorySummaryResponse
 {
-    public Guid Id { get; set; }
+    public int Id { get; set; }
 
     public string CategoryName { get; set; } = string.Empty;
 

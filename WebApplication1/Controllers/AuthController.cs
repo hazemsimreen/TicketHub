@@ -38,10 +38,10 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
-        _db.Set<UserRole>().Add(new UserRole { UserId = user.Id, RoleId = Guid.Parse("1") });
+        _db.Set<UserRole>().Add(new UserRole { UserId = user.Id, RoleId = int.Parse("1") });
         await _db.SaveChangesAsync();
 
-        user.UserRoles.Add(new UserRole { RoleId = Guid.Parse("1"), Role = new Role { Code = "Citizen" } });
+        user.UserRoles.Add(new UserRole { RoleId = int.Parse("1"), Role = new Role { Code = "Citizen" } });
 
         return Ok(BuildAuthResponse(user));
     }

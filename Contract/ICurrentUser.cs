@@ -10,5 +10,11 @@ namespace BusinessLogic
         string? UserName { get; }
         string? Email { get; }
         bool IsAuthenticated { get; }
+
+
+        // جديد — لازم للـ Access Filter بكل الـ services (مش بس Tickets)
+        Guid? PrimaryDepartmentId { get; }
+        IReadOnlyList<string> Roles { get; }
+        bool IsInRole(string roleCode);
     }
 }
