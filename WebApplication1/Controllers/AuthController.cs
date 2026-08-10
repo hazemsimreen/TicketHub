@@ -1,70 +1,148 @@
 using API.Auth;
+using BusinessLogic;
+using BusinessLogic.Auth;
 using Contract.Dtos;
-using DataAccess.Models;
-using DataAccess.Context;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace WebApplication1.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
+[Authorize]
+[EnableRateLimiting("auth")]
 public class AuthController : ControllerBase
 {
-    private readonly UserManager<User> _userManager;
-    private readonly ITokenService _tokens;
-    private readonly AppDbContext _db;
+    private readonly IAuthService _auth;
+    private readonly ICurrentUser _me;
 
-    public AuthController(UserManager<User> userManager, ITokenService tokens, AppDbContext db)
+    public AuthController(IAuthService auth, ICurrentUser me)
     {
-        _userManager = userManager;
-        _tokens = tokens;
-        _db = db;
+        _auth = auth;
+        _me   = me;
     }
 
+    // ── Register ──────────────────────────────────────────────────────────────
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest req)
+    [AllowAnonymous]
+    public async Task<IActionResult> Register(RegisterRequest req, CancellationToken ct)
     {
-        var user = new User
-        {
-            Email = req.Email,
-            UserName = req.Email,
-            UserType = "Citizen"
-        };
-
-        var result = await _userManager.CreateAsync(user, req.Password);
-
-        if (!result.Succeeded)
-            return BadRequest(result.Errors);
-
-        _db.Set<UserRole>().Add(new UserRole { UserId = user.Id, RoleId = Guid.Parse("1") });
-        await _db.SaveChangesAsync();
-
-        user.UserRoles.Add(new UserRole { RoleId = Guid.Parse("1"), Role = new Role { Code = "Citizen" } });
-
-        return Ok(BuildAuthResponse(user));
+        var r = await _auth.RegisterAsync(req, ct);
+        return r.IsSuccess ? StatusCode(201, r.Data) : Problem(r.ErrorMessage, statusCode: r.StatusCode);
     }
 
+    // ── Login ─────────────────────────────────────────────────────────────────
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponse>> Login(LoginRequest req)
+    [AllowAnonymous]
+    public async Task<IActionResult> Login(LoginRequest req, CancellationToken ct)
     {
-        var user = await _userManager.Users
-            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Email == req.Email);
-
-        if (user is null || !await _userManager.CheckPasswordAsync(user, req.Password))
-            return Unauthorized(new { message = "Invalid email or password." });
-
-        return Ok(BuildAuthResponse(user));
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var ua = Request.Headers.UserAgent.ToString();
+        var r  = await _auth.LoginAsync(req, ip, ua, ct);
+        return r.IsSuccess ? Ok(r.Data) : Problem(r.ErrorMessage, statusCode: r.StatusCode);
     }
-    private AuthResponse BuildAuthResponse(User user)
+
+    // ── Refresh ───────────────────────────────────────────────────────────────
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Refresh(RefreshRequest req, CancellationToken ct)
     {
-        var (accessToken, expires) = _tokens.CreateAccessToken(user);
-        var refreshToken = _tokens.CreateRefreshToken();
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var ua = Request.Headers.UserAgent.ToString();
+        var r  = await _auth.RefreshAsync(req.RefreshToken, ip, ua, ct);
+        return r.IsSuccess ? Ok(r.Data) : Problem(r.ErrorMessage, statusCode: r.StatusCode);
+    }
 
-        var roles = user.UserRoles.Select(ur => ur.Role.Code).ToList();
+    // ── Logout ────────────────────────────────────────────────────────────────
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(RefreshRequest req, CancellationToken ct)
+    {
+        var r = await _auth.LogoutAsync(req.RefreshToken, ct);
+        return r.IsSuccess ? NoContent() : Problem(r.ErrorMessage, statusCode: r.StatusCode);
+    }
 
-        return new AuthResponse(accessToken, refreshToken, expires, user.Email ?? string.Empty, roles);
+    // ── Logout All ────────────────────────────────────────────────────────────
+    [HttpPost("logout-all")]
+    public async Task<IActionResult> LogoutAll(CancellationToken ct)
+    {
+        var r = await _auth.LogoutAllAsync(_me.UserId!, ct);
+        return r.IsSuccess ? NoContent() : Problem(r.ErrorMessage, statusCode: r.StatusCode);
+    }
+
+    // ── Get Me ────────────────────────────────────────────────────────────────
+    [HttpGet("me")]
+    public async Task<IActionResult> GetMe(CancellationToken ct)
+    {
+        var r = await _auth.GetMeAsync(_me.UserId!, ct);
+        return r.IsSuccess ? Ok(r.Data) : Problem(r.ErrorMessage, statusCode: r.StatusCode);
+    }
+
+    // ── Update Me ─────────────────────────────────────────────────────────────
+    [HttpPut("me")]
+    public async Task<IActionResult> UpdateMe(UpdateMeRequest req, CancellationToken ct)
+    {
+        var r = await _auth.UpdateMeAsync(_me.UserId!, req, ct);
+        return r.IsSuccess ? Ok(r.Data) : Problem(r.ErrorMessage, statusCode: r.StatusCode);
+    }
+
+    // ── Change Password ───────────────────────────────────────────────────────
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest req, CancellationToken ct)
+    {
+        var r = await _auth.ChangePasswordAsync(_me.UserId!, req, ct);
+        return r.IsSuccess ? NoContent() : Problem(r.ErrorMessage, statusCode: r.StatusCode);
+    }
+
+    // ── Forgot Password ───────────────────────────────────────────────────────
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest req, CancellationToken ct)
+    {
+        await _auth.ForgotPasswordAsync(req.Email, ct);
+        return NoContent();
+    }
+
+    // ── Reset Password ────────────────────────────────────────────────────────
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest req, CancellationToken ct)
+    {
+        var r = await _auth.ResetPasswordAsync(req, ct);
+        return r.IsSuccess ? NoContent() : Problem(r.ErrorMessage, statusCode: r.StatusCode);
+    }
+
+    // ── Confirm Email ─────────────────────────────────────────────────────────
+    [HttpPost("confirm-email")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequest req, CancellationToken ct)
+    {
+        var r = await _auth.ConfirmEmailAsync(req, ct);
+        return r.IsSuccess ? NoContent() : Problem(r.ErrorMessage, statusCode: r.StatusCode);
+    }
+
+    // ── Resend Confirmation ───────────────────────────────────────────────────
+    [HttpPost("resend-confirmation")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResendConfirmation(ForgotPasswordRequest req, CancellationToken ct)
+    {
+        await _auth.ResendConfirmationAsync(req.Email, ct);
+        return NoContent();
+    }
+
+    // ── Get Sessions ──────────────────────────────────────────────────────────
+    [HttpGet("sessions")]
+    public async Task<IActionResult> GetSessions(CancellationToken ct)
+    {
+        var r = await _auth.GetSessionsAsync(_me.UserId!, ct);
+        return r.IsSuccess ? Ok(r.Data) : Problem(r.ErrorMessage, statusCode: r.StatusCode);
+    }
+
+    // ── Revoke Session ────────────────────────────────────────────────────────
+    [HttpDelete("sessions/{id:guid}")]
+    public async Task<IActionResult> RevokeSession(Guid id, CancellationToken ct)
+    {
+        var r = await _auth.RevokeSessionAsync(_me.UserId!, id, ct);
+        return r.IsSuccess ? NoContent() : Problem(r.ErrorMessage, statusCode: r.StatusCode);
     }
 }

@@ -1,4 +1,4 @@
-﻿using DataAccess.Models;
+using DataAccess.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -14,8 +14,8 @@ public class AppDbContext
     }
 
     public DbSet<Department> Departments => Set<Department>();
-    public DbSet<Role> Roles => Set<Role>();
-    public DbSet<UserRole> UserRoles => Set<UserRole>();
+    public new DbSet<Role> Roles => Set<Role>();
+    public new DbSet<UserRole> UserRoles => Set<UserRole>();
 
     public DbSet<TicketPriority> TicketPriorities => Set<TicketPriority>();
     public DbSet<TicketStatus> TicketStatuses => Set<TicketStatus>();
@@ -56,8 +56,45 @@ public class AppDbContext
     public DbSet<NotificationType> NotificationTypes =>
         Set<NotificationType>();
 
-    public DbSet<Notification> Notifications =>
-        Set<Notification>();
+    public DbSet<Notification>  Notifications  => Set<Notification>();
+    public DbSet<RefreshToken>  RefreshTokens  => Set<RefreshToken>();
+
+    // ── Automatic Audit Stamping + Soft Delete ────────────────────────────────
+    public override Task<int> SaveChangesAsync(CancellationToken ct = default)
+    {
+        ApplyAuditRules();
+        return base.SaveChangesAsync(ct);
+    }
+
+    public override int SaveChanges()
+    {
+        ApplyAuditRules();
+        return base.SaveChanges();
+    }
+
+    private void ApplyAuditRules()
+    {
+        var now = DateTime.UtcNow;
+        foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
+        {
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    entry.Entity.CreatedAt = now;
+                    entry.Entity.IsDeleted = false;
+                    break;
+                case EntityState.Modified:
+                    entry.Entity.UpdatedAt = now;
+                    break;
+                case EntityState.Deleted:
+                    // Convert hard-delete → soft-delete
+                    entry.State             = EntityState.Modified;
+                    entry.Entity.IsDeleted  = true;
+                    entry.Entity.DeletedAt  = now;
+                    break;
+            }
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -618,6 +655,18 @@ public class AppDbContext
                 .WithMany(x => x.Notifications)
                 .HasForeignKey(x => x.TicketId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── RefreshTokens ─────────────────────────────────────────────────────
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.ToTable("RefreshTokens");
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.TokenHash).IsUnique();
+            entity.HasOne(x => x.User)
+                  .WithMany()
+                  .HasForeignKey(x => x.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

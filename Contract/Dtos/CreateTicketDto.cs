@@ -1,6 +1,5 @@
-﻿using DataAccess.Models;
-using System.ComponentModel.DataAnnotations;
 using DataAccess.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace Contract.Dtos
 {
