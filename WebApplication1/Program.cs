@@ -35,6 +35,7 @@ builder.Services
     .Validate(o => o.AccessTokenMinutes is > 0 and <= 60,
         "Jwt:AccessTokenMinutes must be between 1 and 60.")
     .ValidateOnStart();
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -59,9 +60,24 @@ builder.Services
             RoleClaimType = "role",
             NameClaimType = "sub"
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
     });
-
-
 
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddControllers();
