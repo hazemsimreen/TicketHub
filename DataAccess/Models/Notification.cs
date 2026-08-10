@@ -2,6 +2,7 @@
 
 public class Notification : AuditableEntity
 {
+    public Guid Id { get; set; }
     public Guid RecipientUserId { get; set; }
 
     public Guid NotificationTypeId { get; set; }

@@ -2,11 +2,13 @@
 
 public class WorkflowStep : AuditableEntity
 {
+
+    public Guid Id { get; set; }
     public Guid WorkflowDefinitionId { get; set; }
 
     public int StepOrder { get; set; }
 
-    public Guid? RoleId { get; set; }
+    public int? RoleId { get; set; }
 
     public Guid? AssignedUserId { get; set; }
 

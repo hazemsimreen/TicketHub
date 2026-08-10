@@ -2,7 +2,7 @@
 
 public class WorkflowStepInstance : AuditableEntity
 {
-
+    public Guid Id { get; set; }
     public Guid WorkflowInstanceId { get; set; }
 
     public Guid WorkflowStepId { get; set; }

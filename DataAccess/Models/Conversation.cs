@@ -2,8 +2,8 @@
 
 public class Conversation : AuditableEntity
 {
-    
 
+    public Guid Id { get; set; }
     public Guid TicketId { get; set; }
 
     public Ticket Ticket { get; set; } = null!;
