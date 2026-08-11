@@ -129,14 +129,20 @@ public class ChatService : IChatService
         Guid userIdToAdd,
         CancellationToken ct = default)
     {
-        var callerIsParticipant = await _uow.Repository<ConversationParticipant>()
+        var conversation = await _uow.Repository<Conversation>()
             .Query()
-            .AnyAsync(
-                p => p.ConversationId == conversationId &&
-                     p.UserId == requestingUserId,
-                ct);
+            .Include(c => c.Ticket)
+            .FirstOrDefaultAsync(c => c.Id == conversationId, ct);
 
-        if (!callerIsParticipant)
+        if (conversation is null)
+            return ServiceResult<bool>.NotFound("Conversation not found.");
+
+        var canAccess = conversation.Ticket.SubmittedByUserId == requestingUserId
+                        || await _uow.Repository<UserRole>()
+                            .Query()
+                            .AnyAsync(ur => ur.UserId == requestingUserId && ur.DepartmentId == conversation.Ticket.DepartmentId, ct);
+
+        if (!canAccess)
             return ServiceResult<bool>.NotFound("Conversation not found.");
 
         var alreadyParticipant = await _uow.Repository<ConversationParticipant>()
@@ -171,32 +177,37 @@ public class ChatService : IChatService
     {
         var conversation = await _uow.Repository<Conversation>()
             .Query()
-            .Where(c =>
-                c.Id == conversationId &&
-                c.Participants.Any(p => p.UserId == userId))
-            .Select(c => new ConversationDetailsDto
-            {
-                Id = c.Id,
-                TicketId = c.TicketId,
-                TicketTitle = c.Ticket.Title,
-                CreatedAt = c.CreatedAt,
-
-                Participants = c.Participants
-                    .Select(p => new ConversationParticipantDto
-                    {
-                        UserId = p.UserId,
-                        LastReadAt = p.LastReadAt
-                    })
-                    .ToList()
-            })
-            .FirstOrDefaultAsync(ct);
+            .Include(c => c.Ticket)
+            .Include(c => c.Participants)
+            .FirstOrDefaultAsync(c => c.Id == conversationId, ct);
 
         if (conversation is null)
-            return ServiceResult<ConversationDetailsDto>
-                .NotFound("Conversation not found.");
+            return ServiceResult<ConversationDetailsDto>.NotFound("Conversation not found.");
 
-        return ServiceResult<ConversationDetailsDto>
-            .Success(conversation);
+        var canAccess = conversation.Ticket.SubmittedByUserId == userId
+                        || await _uow.Repository<UserRole>()
+                            .Query()
+                            .AnyAsync(ur => ur.UserId == userId && ur.DepartmentId == conversation.Ticket.DepartmentId, ct);
+
+        if (!canAccess)
+            return ServiceResult<ConversationDetailsDto>.NotFound("Conversation not found.");
+
+        var dto = new ConversationDetailsDto
+        {
+            Id = conversation.Id,
+            TicketId = conversation.TicketId,
+            TicketTitle = conversation.Ticket.Title,
+            CreatedAt = conversation.CreatedAt,
+            Participants = conversation.Participants
+                .Select(p => new ConversationParticipantDto
+                {
+                    UserId = p.UserId,
+                    LastReadAt = p.LastReadAt
+                })
+                .ToList()
+        };
+
+        return ServiceResult<ConversationDetailsDto>.Success(dto);
     }
 
     public async Task<ServiceResult<ConversationMessage>> SendMessageAsync(
