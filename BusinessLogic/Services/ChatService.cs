@@ -64,13 +64,6 @@ public class ChatService : IChatService
         if (!callerIsParticipant)
             return ServiceResult<bool>.NotFound("Conversation not found.");
 
-        var userExists = await _uow.Repository<User>()
-            .Query()
-            .AnyAsync(u => u.Id == userIdToAdd, ct);
-
-        if (!userExists)
-            return ServiceResult<bool>.NotFound("User not found.");
-
         var alreadyParticipant = await _uow.Repository<ConversationParticipant>()
             .Query()
             .AnyAsync(
@@ -95,6 +88,7 @@ public class ChatService : IChatService
 
         return ServiceResult<bool>.Created(true);
     }
+
     public async Task<ServiceResult<ConversationDetailsDto>> GetConversationByIdAsync(
         Guid conversationId,
         Guid userId,
