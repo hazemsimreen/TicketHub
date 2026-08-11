@@ -2,7 +2,7 @@ using BusinessLogic.Common;
 using DataAccess.Models;
 using Microsoft.EntityFrameworkCore;
 using TicketHub.DataAccess.Repositories;
-
+using Contract.Dtos;
 namespace BusinessLogic.Services;
 
 public interface IChatService
@@ -19,7 +19,15 @@ public interface IChatService
     Task<ServiceResult<List<ConversationMessage>>> GetMessages(
         Guid conversationId, Guid userId, Guid? beforeMessageId, int take = 20, CancellationToken ct = default);
     
-    Task<ServiceResult<List<Conversation>>> GetMyConversations(Guid userId, CancellationToken ct = default);
+    Task<ServiceResult<List<ConversationSummaryDto>>> GetMyConversations(
+        Guid userId,
+        CancellationToken ct = default);
+    
+    
+    Task<ServiceResult<DateTime>> MarkConversationAsReadAsync(
+        Guid conversationId,
+        Guid userId,
+        CancellationToken ct = default);
 }
 
 public class ChatService : IChatService
@@ -146,7 +154,9 @@ public class ChatService : IChatService
         return ServiceResult<List<ConversationMessage>>.Success(messages);
     }
     
-    public async Task<ServiceResult<List<Conversation>>> GetMyConversations(Guid userId, CancellationToken ct = default)
+    public async Task<ServiceResult<List<ConversationSummaryDto>>> GetMyConversations(
+        Guid userId,
+        CancellationToken ct = default)
     {
         var myDepartmentIds = await _uow.Repository<UserRole>()
             .Query()
@@ -156,12 +166,98 @@ public class ChatService : IChatService
 
         var conversations = await _uow.Repository<Conversation>()
             .Query()
-            .Include(c => c.Ticket)
-            .Where(c => c.Ticket.SubmittedByUserId == userId
-                        || myDepartmentIds.Contains(c.Ticket.DepartmentId))
-            .OrderByDescending(c => c.CreatedAt)
+            .Where(c =>
+                c.Ticket.SubmittedByUserId == userId ||
+                myDepartmentIds.Contains(c.Ticket.DepartmentId))
+            .Select(c => new ConversationSummaryDto
+            {
+                Id = c.Id,
+                TicketId = c.TicketId,
+                TicketTitle = c.Ticket.Title,
+                CreatedAt = c.CreatedAt,
+
+                LastMessage = c.Messages
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Select(m => m.Body)
+                    .FirstOrDefault(),
+
+                LastMessageAt = c.Messages
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Select(m => (DateTime?)m.CreatedAt)
+                    .FirstOrDefault(),
+
+                UnreadCount = c.Messages.Count(m =>
+                    m.SenderUserId != userId &&
+                    m.CreatedAt >
+                    (
+                        c.Participants
+                            .Where(p => p.UserId == userId)
+                            .Select(p => p.LastReadAt)
+                            .FirstOrDefault()
+                        ?? DateTime.MinValue
+                    ))
+            })
+            .OrderByDescending(c => c.LastMessageAt ?? c.CreatedAt)
             .ToListAsync(ct);
 
-        return ServiceResult<List<Conversation>>.Success(conversations);
+        return ServiceResult<List<ConversationSummaryDto>>
+            .Success(conversations);
+    }
+    public async Task<ServiceResult<DateTime>> MarkConversationAsReadAsync(
+        Guid conversationId,
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        var conversation = await _uow.Repository<Conversation>()
+            .Query()
+            .Include(c => c.Ticket)
+            .FirstOrDefaultAsync(c => c.Id == conversationId, ct);
+
+        if (conversation is null)
+            return ServiceResult<DateTime>.NotFound("Conversation not found.");
+
+        var canAccess =
+            conversation.Ticket.SubmittedByUserId == userId
+            || await _uow.Repository<UserRole>()
+                .Query()
+                .AnyAsync(
+                    ur => ur.UserId == userId
+                          && ur.DepartmentId == conversation.Ticket.DepartmentId,
+                    ct);
+
+        if (!canAccess)
+            return ServiceResult<DateTime>.Forbidden(
+                "You cannot access this conversation.");
+
+        var participant = await _uow.Repository<ConversationParticipant>()
+            .Query()
+            .FirstOrDefaultAsync(
+                p => p.ConversationId == conversationId
+                     && p.UserId == userId,
+                ct);
+
+        var readAt = DateTime.UtcNow;
+
+        if (participant is null)
+        {
+            participant = new ConversationParticipant
+            {
+                ConversationId = conversationId,
+                UserId = userId,
+                LastReadAt = readAt
+            };
+
+            await _uow.Repository<ConversationParticipant>()
+                .AddAsync(participant, ct);
+        }
+        else
+        {
+            participant.LastReadAt = readAt;
+            participant.UpdatedAt = readAt;
+        }
+
+        await _uow.SaveChangesAsync(ct);
+
+        return ServiceResult<DateTime>.Success(readAt);
     }
 }

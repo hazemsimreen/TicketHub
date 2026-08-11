@@ -14,6 +14,29 @@ public class ChatHub : Hub
     {
         _chatService = chatService;
     }
+
+    public static string UserGroup(Guid userId) => $"user-{userId}";
+    public override async Task OnConnectedAsync()
+    {
+        var userId = Guid.Parse(Context.User!.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, UserGroup(userId));
+
+        var conversations = await _chatService.GetMyConversations(userId);
+
+        if (conversations.IsSuccess)
+        {
+            foreach (var conversation in conversations.Data!)
+            {
+                await Groups.AddToGroupAsync(
+                    Context.ConnectionId,
+                    conversation.Id.ToString());
+            }
+        }
+
+        await base.OnConnectedAsync();
+    }
+    
     public async Task SendMessage(Guid conversationId, string body)
     {
         var userId = Guid.Parse(Context.User!.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);

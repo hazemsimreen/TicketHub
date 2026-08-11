@@ -2,6 +2,8 @@ using BusinessLogic.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Microsoft.AspNetCore.SignalR;
+using WebApplication1.Hubs;
 
 namespace WebApplication1.Controllers;
 
@@ -11,10 +13,12 @@ namespace WebApplication1.Controllers;
 public class ChatController : ControllerBase
 {
     private readonly IChatService _chatService;
+    private readonly IHubContext<ChatHub> _hub;
 
-    public ChatController(IChatService chatService)
+    public ChatController(IChatService chatService, IHubContext<ChatHub> hub)
     {
         _chatService = chatService;
+        _hub = hub;
     }
 
     [HttpPost("tickets/{ticketId}/conversation")]
@@ -59,18 +63,70 @@ public class ChatController : ControllerBase
     [HttpGet("conversations")]
     public async Task<ActionResult> GetMyConversations()
     {
-        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
         var result = await _chatService.GetMyConversations(userId);
 
-        var conversations = result.Data!.Select(c => new
-        {
-            id = c.Id,
-            ticketId = c.TicketId,
-            ticketTitle = c.Ticket.Title,
-            createdAt = c.CreatedAt
-        });
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
 
-        return Ok(conversations);
+        return Ok(result.Data);
+    }
+    
+    [HttpPost("conversations/{conversationId}/messages")]
+    public async Task<ActionResult> SendMessage(
+        Guid conversationId,
+        [FromBody] SendMessageRequest request)
+    {
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.SendMessageAsync(conversationId, userId, request.Body);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
+
+        var response = new
+        {
+            id = result.Data!.Id,
+            conversationId = result.Data.ConversationId,
+            senderUserId = result.Data.SenderUserId,
+            body = result.Data.Body,
+            createdAt = result.Data.CreatedAt
+        };
+
+        await _hub.Clients.Group(conversationId.ToString())
+            .SendAsync("ReceiveMessage", response);
+
+        return StatusCode(StatusCodes.Status201Created, response);
+    }
+    
+    [HttpPatch("conversations/{conversationId}/read")]
+    public async Task<ActionResult> MarkConversationAsRead(
+        Guid conversationId)
+    {
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.MarkConversationAsReadAsync(
+            conversationId,
+            userId);
+
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
+
+        return Ok(new
+        {
+            conversationId,
+            lastReadAt = result.Data
+        });
+    }
+    public class SendMessageRequest
+    {
+        public string Body { get; set; } = string.Empty;
     }
 }
