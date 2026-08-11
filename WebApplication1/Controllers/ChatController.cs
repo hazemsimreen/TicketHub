@@ -185,6 +185,31 @@ public class ChatController : ControllerBase
 
         return NoContent();
     }
+    [HttpDelete("messages/{messageId}")]
+    public async Task<ActionResult> DeleteMessage(
+        Guid messageId)
+    {
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.DeleteMessageAsync(
+            messageId,
+            userId);
+
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
+
+        await _hub.Clients
+            .Group(result.Data.ToString())
+            .SendAsync("MessageDeleted", new
+            {
+                messageId
+            });
+
+        return NoContent();
+    }
     public class SendMessageRequest
     {
         public string Body { get; set; } = string.Empty;

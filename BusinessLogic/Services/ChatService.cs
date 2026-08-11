@@ -45,6 +45,10 @@ public interface IChatService
         Guid conversationId,
         Guid userId,
         CancellationToken ct = default);
+    Task<ServiceResult<Guid>> DeleteMessageAsync(
+        Guid messageId,
+        Guid requestingUserId,
+        CancellationToken ct = default);
 
 
 }
@@ -56,6 +60,45 @@ public class ChatService : IChatService
     public ChatService(IUnitOfWork uow)
     {
         _uow = uow;
+    }
+
+    public async Task<ServiceResult<Guid>> DeleteMessageAsync(
+        Guid messageId,
+        Guid requestingUserId,
+        CancellationToken ct = default)
+    {
+        var message = await _uow.Repository<ConversationMessage>()
+            .Query()
+            .FirstOrDefaultAsync(
+                m => m.Id == messageId && !m.IsDeleted,
+                ct);
+
+        if (message is null)
+            return ServiceResult<Guid>.NotFound(
+                "Message not found.");
+
+        var isSender = message.SenderUserId == requestingUserId;
+
+        var isAdmin = await _uow.Repository<UserRole>()
+            .Query()
+            .AnyAsync(
+                ur => ur.UserId == requestingUserId &&
+                      !ur.IsDeleted &&
+                      ur.Role.Code == "Admin",
+                ct);
+
+        if (!isSender && !isAdmin)
+            return ServiceResult<Guid>.Forbidden(
+                "You cannot delete this message.");
+
+        var conversationId = message.ConversationId;
+
+        _uow.Repository<ConversationMessage>()
+            .Remove(message);
+
+        await _uow.SaveChangesAsync(ct);
+
+        return ServiceResult<Guid>.Success(conversationId);
     }
     public async Task<Result> LeaveConversationAsync(
         Guid conversationId,
@@ -251,8 +294,9 @@ public class ChatService : IChatService
 
         var query = _uow.Repository<ConversationMessage>()
             .Query()
-            .Where(m => m.ConversationId == conversationId);
-
+            .Where(m =>
+                m.ConversationId == conversationId &&
+                !m.IsDeleted);
         if (beforeMessageId is not null)
         {
             var cursor = await _uow.Repository<ConversationMessage>()
