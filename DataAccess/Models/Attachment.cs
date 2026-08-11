@@ -3,7 +3,7 @@
 public class Attachment: AuditableEntity
 {
 
-
+    public Guid Id { get; set; }
     public Guid? TicketId { get; set; }
 
     public Guid? CommentId { get; set; }

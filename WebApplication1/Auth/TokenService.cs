@@ -46,7 +46,7 @@ public class TokenService : ITokenService
 
         foreach (var userRole in user.UserRoles)
         {
-            if (userRole.Role != null)
+            if (userRole.Role is not null)
             {
                 claims.Add(new Claim("role", userRole.Role.Code));
             }

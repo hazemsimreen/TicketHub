@@ -139,6 +139,15 @@ public class AppDbContext
                 .WithMany(x => x.ChildDepartments)
                 .HasForeignKey(x => x.ParentDepartmentId)
                 .OnDelete(DeleteBehavior.Restrict);
+            entity.HasData(
+                new Department
+                {
+                    Id = Guid.Parse("d0000000-0000-0000-0000-000000000001"),
+                    Code = "IT",
+                    Name = "IT Support",
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                }
+            );
         });
 
         // =========================================================
@@ -153,6 +162,13 @@ public class AppDbContext
 
             entity.HasIndex(x => x.Code)
                 .IsUnique();
+            entity.HasData(
+                new Role { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), Code = "Citizen", IsDepartmentScoped = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Role { Id = Guid.Parse("22222222-2222-2222-2222-222222222222"), Code = "Agent", IsDepartmentScoped = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Role { Id = Guid.Parse("33333333-3333-3333-3333-333333333333"), Code = "Admin", IsDepartmentScoped = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+            );
+
+            
         });
 
         // =========================================================
@@ -201,6 +217,15 @@ public class AppDbContext
 
             entity.HasIndex(x => x.Code)
                 .IsUnique();
+            entity.HasData(
+                new TicketPriority
+                {
+                    Id = Guid.Parse("a0000000-0000-0000-0000-000000000002"),
+                    Code = "Normal",
+                    SortOrder = Guid.Parse("00000000-0000-0000-0000-000000000001"),
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                }
+            );
         });
 
         // =========================================================
@@ -215,6 +240,15 @@ public class AppDbContext
 
             entity.HasIndex(x => x.Code)
                 .IsUnique();
+            entity.HasData(
+                new TicketStatus
+                {
+                    Id = Guid.Parse("a0000000-0000-0000-0000-000000000003"),
+                    Code = "Open",
+                    IsTerminal = false,
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                }
+            );
         });
 
         // =========================================================
@@ -239,6 +273,16 @@ public class AppDbContext
                 .WithMany(x => x.DefaultCategories)
                 .HasForeignKey(x => x.DefaultPriorityId)
                 .OnDelete(DeleteBehavior.Restrict);
+            entity.HasData(
+                new Category
+                {
+                    Id = Guid.Parse("c0000000-0000-0000-0000-000000000001"),
+                    Name = "General",
+                    DepartmentId = Guid.Parse("d0000000-0000-0000-0000-000000000001"),
+                    DefaultPriorityId = Guid.Parse("a0000000-0000-0000-0000-000000000002"),
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                }
+            );
         });
 
         // =========================================================
@@ -279,6 +323,12 @@ public class AppDbContext
             entity.HasOne(x => x.Status)
                 .WithMany(x => x.Tickets)
                 .HasForeignKey(x => x.StatusId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // جديد — علاقة الإسناد (Assign)، اختيارية (nullable FK)
+            entity.HasOne(x => x.AssignedToUser)
+                .WithMany(x => x.AssignedTickets)
+                .HasForeignKey(x => x.AssignedToUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

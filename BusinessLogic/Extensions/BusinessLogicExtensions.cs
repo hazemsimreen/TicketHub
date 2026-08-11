@@ -18,6 +18,8 @@ public static class BusinessLogicExtensions
         // سيتم تسجيل الخدمات هنا اي خدمة يتم اضافتها في طبقة الاعمال يجب تسجيلها هنا لكي يتم حقنها في الطبقات الاخرى
 
         services.AddScoped<IRealtimeNotifier, NullRealtimeNotifier>();
+        services.AddScoped<ITicketService, TicketService>();
+        services.AddScoped<ICurrentUser, CurrentUser>();
         return services;
         
     }

@@ -4,6 +4,7 @@ using API.Auth;
 using API.Middleware;
 using API.Services;
 using BusinessLogic;
+using BusinessLogic.Abstractions;
 using BusinessLogic.Auth;
 using BusinessLogic.Extensions;
 using Contracts.Security;
@@ -17,6 +18,8 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using WebApplication1.Hubs;
+using WebApplication1.Realtime;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +27,8 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration
     .GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found.");
+
+builder.Services.AddSignalR();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
@@ -33,15 +38,15 @@ builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<AppDbContext>(
 // ── Identity ──────────────────────────────────────────────────────────────────
 builder.Services.AddIdentityCore<User>(options =>
 {
-    options.Password.RequireDigit = false;
-    options.Password.RequiredLength = 8;
+    options.Password.RequireDigit           = false;
+    options.Password.RequiredLength         = 8;
     options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = false;
-    options.Password.RequireLowercase = false;
-    options.User.RequireUniqueEmail = true;
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Password.RequireUppercase       = false;
+    options.Password.RequireLowercase       = false;
+    options.User.RequireUniqueEmail         = true;
+    options.Lockout.DefaultLockoutTimeSpan  = TimeSpan.FromMinutes(15);
     options.Lockout.MaxFailedAccessAttempts = 5;
-    options.SignIn.RequireConfirmedEmail = false;
+    options.SignIn.RequireConfirmedEmail     = false;
 })
 .AddRoles<IdentityRole<Guid>>()
 .AddEntityFrameworkStores<AppDbContext>()
@@ -67,7 +72,7 @@ builder.Services
     .AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
     })
     .AddJwtBearer(options =>
     {
@@ -76,14 +81,29 @@ builder.Services
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtCfg.Key)),
-            ValidateIssuer = true,
-            ValidIssuer = jwtCfg.Issuer,
+            ValidateIssuer   = true,
+            ValidIssuer      = jwtCfg.Issuer,
             ValidateAudience = true,
-            ValidAudience = jwtCfg.Audience,
+            ValidAudience    = jwtCfg.Audience,
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromSeconds(30),
-            NameClaimType = AppClaimTypes.Name,
-            RoleClaimType = AppClaimTypes.Role
+            ClockSkew        = TimeSpan.FromSeconds(30),
+            NameClaimType    = AppClaimTypes.Name,
+            RoleClaimType    = AppClaimTypes.Role
+        };
+
+        // SignalR Token passing support via query string
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -98,9 +118,9 @@ builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter("auth", o =>
     {
-        o.Window = TimeSpan.FromMinutes(1);
+        o.Window      = TimeSpan.FromMinutes(1);
         o.PermitLimit = 10;
-        o.QueueLimit = 0;
+        o.QueueLimit  = 0;
     });
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
@@ -119,12 +139,13 @@ builder.Services.AddCors(options =>
 
 // ── Service Registrations ─────────────────────────────────────────────────────
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
+builder.Services.AddScoped<ICurrentUser,  HttpCurrentUser>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IEmailSender, ConsoleEmailSender>();
+builder.Services.AddScoped<IAuthService,  AuthService>();
+builder.Services.AddScoped<IEmailSender,  ConsoleEmailSender>();
 
 builder.Services.AddBusinessLogic();
+builder.Services.AddSingleton<IRealtimeNotifier, SignalRNotifier>();
 builder.Services.AddDataAccess();
 
 builder.Services.AddControllers();
@@ -134,15 +155,17 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "TicketHub API", Version = "v1" });
+    
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
+        Name         = "Authorization",
+        Type         = SecuritySchemeType.Http,
+        Scheme       = "bearer",
         BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Paste the JWT access token from /api/auth/login."
+        In           = ParameterLocation.Header,
+        Description  = "Paste your JWT access token from /api/auth/login below (without Bearer prefix)."
     });
+
     options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
     {
         [new OpenApiSecuritySchemeReference("Bearer", doc)] = new List<string>()
@@ -165,8 +188,10 @@ app.UseCors("FrontendPolicy");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseStaticFiles();
 
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 
 // ── Startup Seeding ───────────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())

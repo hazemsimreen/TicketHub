@@ -3,6 +3,7 @@ namespace DataAccess.Models;
 public class TicketStatus : AuditableEntity
 {
 
+    public int Id { get; set; }
     public string Code { get; set; } = string.Empty;
 
     public bool IsTerminal { get; set; }
