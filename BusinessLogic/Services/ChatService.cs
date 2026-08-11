@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using TicketHub.DataAccess.Repositories;
 using Contract.Dtos;
 namespace BusinessLogic.Services;
-using Result = BusinessLogic.ServiceResult.ServiceResult;
+using Result = BusinessLogic.Common.ServiceResult;
 
 public interface IChatService
 {
@@ -49,6 +49,11 @@ public interface IChatService
         Guid messageId,
         Guid requestingUserId,
         CancellationToken ct = default);
+    Task<ServiceResult<Guid>> CreateConversationAsync(
+        Guid ticketId,
+        Guid requestingUserId,
+        List<Guid> participantIds,
+        CancellationToken ct = default);
 
 
 }
@@ -61,7 +66,72 @@ public class ChatService : IChatService
     {
         _uow = uow;
     }
+    public async Task<ServiceResult<Guid>> CreateConversationAsync(
+        Guid ticketId,
+        Guid requestingUserId,
+        List<Guid> participantIds,
+        CancellationToken ct = default)
+    {
+        var ticket = await _uow.Repository<Ticket>()
+            .Query()
+            .FirstOrDefaultAsync(t => t.Id == ticketId, ct);
 
+        if (ticket is null)
+            return ServiceResult<Guid>.NotFound("Ticket not found.");
+
+        var canAccess =
+            ticket.SubmittedByUserId == requestingUserId ||
+            await _uow.Repository<UserRole>()
+                .Query()
+                .AnyAsync(
+                    ur => ur.UserId == requestingUserId &&
+                          ur.DepartmentId == ticket.DepartmentId,
+                    ct);
+
+        if (!canAccess)
+            return ServiceResult<Guid>.Forbidden(
+                "You cannot create a conversation for this ticket.");
+
+        var alreadyExists = await _uow.Repository<Conversation>()
+            .Query()
+            .AnyAsync(c => c.TicketId == ticketId, ct);
+
+        if (alreadyExists)
+            return ServiceResult<Guid>.Conflict(
+                "A conversation already exists for this ticket.");
+
+        var conversationId = Guid.NewGuid();
+
+        var conversation = new Conversation
+        {
+            Id = conversationId,
+            TicketId = ticketId
+        };
+
+        await _uow.Repository<Conversation>()
+            .AddAsync(conversation, ct);
+
+        var usersToAdd = participantIds
+            .Append(requestingUserId)
+            .Distinct()
+            .ToList();
+
+        foreach (var userId in usersToAdd)
+        {
+            var participant = new ConversationParticipant
+            {
+                ConversationId = conversationId,
+                UserId = userId
+            };
+
+            await _uow.Repository<ConversationParticipant>()
+                .AddAsync(participant, ct);
+        }
+
+        await _uow.SaveChangesAsync(ct);
+
+        return ServiceResult<Guid>.Created(conversationId);
+    }
     public async Task<ServiceResult<Guid>> DeleteMessageAsync(
         Guid messageId,
         Guid requestingUserId,

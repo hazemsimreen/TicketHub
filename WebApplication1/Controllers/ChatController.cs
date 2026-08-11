@@ -210,6 +210,30 @@ public class ChatController : ControllerBase
 
         return NoContent();
     }
+    [HttpPost("conversations")]
+    public async Task<ActionResult> CreateConversation(
+        [FromBody] CreateConversationRequest request)
+    {
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.CreateConversationAsync(
+            request.TicketId,
+            userId,
+            request.ParticipantIds);
+
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
+
+        return StatusCode(
+            StatusCodes.Status201Created,
+            new
+            {
+                conversationId = result.Data
+            });
+    }
     public class SendMessageRequest
     {
         public string Body { get; set; } = string.Empty;
@@ -217,5 +241,12 @@ public class ChatController : ControllerBase
     public class AddParticipantRequest
     {
         public Guid UserId { get; set; }
+    }
+    public class CreateConversationRequest
+    {
+        public Guid TicketId { get; set; }
+
+        public List<Guid> ParticipantIds { get; set; }
+            = new();
     }
 }
