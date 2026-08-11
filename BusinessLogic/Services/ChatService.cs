@@ -7,6 +7,11 @@ namespace BusinessLogic.Services;
 
 public interface IChatService
 {
+    Task<ServiceResult<bool>> AddParticipantAsync(
+        Guid conversationId,
+        Guid requestingUserId,
+        Guid userIdToAdd,
+        CancellationToken ct = default);
     Task<ServiceResult<ConversationMessage>> SendMessageAsync(
         Guid conversationId,
         Guid senderUserId,
@@ -42,6 +47,53 @@ public class ChatService : IChatService
     public ChatService(IUnitOfWork uow)
     {
         _uow = uow;
+    }
+    public async Task<ServiceResult<bool>> AddParticipantAsync(
+        Guid conversationId,
+        Guid requestingUserId,
+        Guid userIdToAdd,
+        CancellationToken ct = default)
+    {
+        var callerIsParticipant = await _uow.Repository<ConversationParticipant>()
+            .Query()
+            .AnyAsync(
+                p => p.ConversationId == conversationId &&
+                     p.UserId == requestingUserId,
+                ct);
+
+        if (!callerIsParticipant)
+            return ServiceResult<bool>.NotFound("Conversation not found.");
+
+        var userExists = await _uow.Repository<User>()
+            .Query()
+            .AnyAsync(u => u.Id == userIdToAdd, ct);
+
+        if (!userExists)
+            return ServiceResult<bool>.NotFound("User not found.");
+
+        var alreadyParticipant = await _uow.Repository<ConversationParticipant>()
+            .Query()
+            .AnyAsync(
+                p => p.ConversationId == conversationId &&
+                     p.UserId == userIdToAdd,
+                ct);
+
+        if (alreadyParticipant)
+            return ServiceResult<bool>.Conflict(
+                "User is already a participant.");
+
+        var participant = new ConversationParticipant
+        {
+            ConversationId = conversationId,
+            UserId = userIdToAdd
+        };
+
+        await _uow.Repository<ConversationParticipant>()
+            .AddAsync(participant, ct);
+
+        await _uow.SaveChangesAsync(ct);
+
+        return ServiceResult<bool>.Created(true);
     }
     public async Task<ServiceResult<ConversationDetailsDto>> GetConversationByIdAsync(
         Guid conversationId,

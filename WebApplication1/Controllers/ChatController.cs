@@ -143,8 +143,36 @@ public class ChatController : ControllerBase
 
         return Ok(result.Data);
     }
+    [HttpPost("conversations/{conversationId}/participants")]
+    public async Task<ActionResult> AddParticipant(
+        Guid conversationId,
+        [FromBody] AddParticipantRequest request)
+    {
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.AddParticipantAsync(
+            conversationId,
+            userId,
+            request.UserId);
+
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
+
+        return StatusCode(StatusCodes.Status201Created, new
+        {
+            conversationId,
+            userId = request.UserId
+        });
+    }
     public class SendMessageRequest
     {
         public string Body { get; set; } = string.Empty;
+    }
+    public class AddParticipantRequest
+    {
+        public Guid UserId { get; set; }
     }
 }
