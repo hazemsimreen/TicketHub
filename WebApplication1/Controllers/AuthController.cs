@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using API.Auth;
 using BusinessLogic;
 using BusinessLogic.Auth;
@@ -15,13 +16,20 @@ namespace WebApplication1.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;
-    private readonly ICurrentUser _me;
 
-    public AuthController(IAuthService auth, ICurrentUser me)
+    public AuthController(IAuthService auth)
     {
         _auth = auth;
-        _me   = me;
     }
+
+    /// <summary>
+    /// Resolves the authenticated user's ID by reading directly from
+    /// ControllerBase.User (the ClaimsPrincipal populated by JwtBearerHandler).
+    /// This avoids the IHttpContextAccessor chain which can have scoping issues.
+    /// </summary>
+    private string? CurrentUserId =>
+        User.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? User.FindFirstValue("sub");
 
     // ── Register ──────────────────────────────────────────────────────────────
     [HttpPost("register")]
@@ -64,33 +72,37 @@ public class AuthController : ControllerBase
 
     // ── Logout All ────────────────────────────────────────────────────────────
     [HttpPost("logout-all")]
+    [Authorize]
     public async Task<IActionResult> LogoutAll(CancellationToken ct)
     {
-        var r = await _auth.LogoutAllAsync(_me.UserId!, ct);
+        var r = await _auth.LogoutAllAsync(CurrentUserId!, ct);
         return r.IsSuccess ? NoContent() : Problem(r.ErrorMessage, statusCode: r.StatusCode);
     }
 
     // ── Get Me ────────────────────────────────────────────────────────────────
     [HttpGet("me")]
+    [Authorize]
     public async Task<IActionResult> GetMe(CancellationToken ct)
     {
-        var r = await _auth.GetMeAsync(_me.UserId!, ct);
+        var r = await _auth.GetMeAsync(CurrentUserId!, ct);
         return r.IsSuccess ? Ok(r.Data) : Problem(r.ErrorMessage, statusCode: r.StatusCode);
     }
 
     // ── Update Me ─────────────────────────────────────────────────────────────
     [HttpPut("me")]
+    [Authorize]
     public async Task<IActionResult> UpdateMe(UpdateMeRequest req, CancellationToken ct)
     {
-        var r = await _auth.UpdateMeAsync(_me.UserId!, req, ct);
+        var r = await _auth.UpdateMeAsync(CurrentUserId!, req, ct);
         return r.IsSuccess ? Ok(r.Data) : Problem(r.ErrorMessage, statusCode: r.StatusCode);
     }
 
     // ── Change Password ───────────────────────────────────────────────────────
     [HttpPost("change-password")]
+    [Authorize]
     public async Task<IActionResult> ChangePassword(ChangePasswordRequest req, CancellationToken ct)
     {
-        var r = await _auth.ChangePasswordAsync(_me.UserId!, req, ct);
+        var r = await _auth.ChangePasswordAsync(CurrentUserId!, req, ct);
         return r.IsSuccess ? NoContent() : Problem(r.ErrorMessage, statusCode: r.StatusCode);
     }
 
@@ -132,17 +144,19 @@ public class AuthController : ControllerBase
 
     // ── Get Sessions ──────────────────────────────────────────────────────────
     [HttpGet("sessions")]
+    [Authorize]
     public async Task<IActionResult> GetSessions(CancellationToken ct)
     {
-        var r = await _auth.GetSessionsAsync(_me.UserId!, ct);
+        var r = await _auth.GetSessionsAsync(CurrentUserId!, ct);
         return r.IsSuccess ? Ok(r.Data) : Problem(r.ErrorMessage, statusCode: r.StatusCode);
     }
 
     // ── Revoke Session ────────────────────────────────────────────────────────
     [HttpDelete("sessions/{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> RevokeSession(Guid id, CancellationToken ct)
     {
-        var r = await _auth.RevokeSessionAsync(_me.UserId!, id, ct);
+        var r = await _auth.RevokeSessionAsync(CurrentUserId!, id, ct);
         return r.IsSuccess ? NoContent() : Problem(r.ErrorMessage, statusCode: r.StatusCode);
     }
 }
