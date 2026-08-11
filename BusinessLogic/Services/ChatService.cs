@@ -4,14 +4,21 @@ using Microsoft.EntityFrameworkCore;
 using TicketHub.DataAccess.Repositories;
 using Contract.Dtos;
 namespace BusinessLogic.Services;
+using Result = BusinessLogic.ServiceResult.ServiceResult;
 
 public interface IChatService
 {
+    Task<Result> LeaveConversationAsync(
+        Guid conversationId,
+        Guid userId,
+        CancellationToken ct = default);
     Task<ServiceResult<bool>> AddParticipantAsync(
         Guid conversationId,
         Guid requestingUserId,
         Guid userIdToAdd,
         CancellationToken ct = default);
+
+
     Task<ServiceResult<ConversationMessage>> SendMessageAsync(
         Guid conversationId,
         Guid senderUserId,
@@ -38,6 +45,8 @@ public interface IChatService
         Guid conversationId,
         Guid userId,
         CancellationToken ct = default);
+
+
 }
 
 public class ChatService : IChatService
@@ -48,6 +57,29 @@ public class ChatService : IChatService
     {
         _uow = uow;
     }
+    public async Task<Result> LeaveConversationAsync(
+        Guid conversationId,
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        var participant = await _uow.Repository<ConversationParticipant>()
+            .Query()
+            .FirstOrDefaultAsync(
+                p => p.ConversationId == conversationId &&
+                     p.UserId == userId,
+                ct);
+
+        if (participant is null)
+            return Result.NotFound("Conversation not found.");
+
+        _uow.Repository<ConversationParticipant>()
+            .Remove(participant);
+
+        await _uow.SaveChangesAsync(ct);
+
+        return Result.NoContent();
+    }
+
     public async Task<ServiceResult<bool>> AddParticipantAsync(
         Guid conversationId,
         Guid requestingUserId,

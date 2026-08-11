@@ -167,6 +167,24 @@ public class ChatController : ControllerBase
             userId = request.UserId
         });
     }
+    [HttpDelete("conversations/{conversationId}/participants/me")]
+    public async Task<ActionResult> LeaveConversation(
+        Guid conversationId)
+    {
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.LeaveConversationAsync(
+            conversationId,
+            userId);
+
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
+
+        return NoContent();
+    }
     public class SendMessageRequest
     {
         public string Body { get; set; } = string.Empty;
