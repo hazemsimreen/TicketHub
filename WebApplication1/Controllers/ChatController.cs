@@ -125,6 +125,24 @@ public class ChatController : ControllerBase
             lastReadAt = result.Data
         });
     }
+    [HttpGet("conversations/{conversationId}")]
+    public async Task<ActionResult> GetConversationById(
+        Guid conversationId)
+    {
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.GetConversationByIdAsync(
+            conversationId,
+            userId);
+
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
+
+        return Ok(result.Data);
+    }
     public class SendMessageRequest
     {
         public string Body { get; set; } = string.Empty;

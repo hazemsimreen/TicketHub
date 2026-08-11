@@ -12,19 +12,24 @@ public interface IChatService
         Guid senderUserId,
         string body,
         CancellationToken ct = default);
-    
+
     Task<ServiceResult<Guid>> GetOrCreateConversation(
         Guid ticketId, Guid requestingUserId, CancellationToken ct = default);
-    
+
     Task<ServiceResult<List<ConversationMessage>>> GetMessages(
         Guid conversationId, Guid userId, Guid? beforeMessageId, int take = 20, CancellationToken ct = default);
-    
+
     Task<ServiceResult<List<ConversationSummaryDto>>> GetMyConversations(
         Guid userId,
         CancellationToken ct = default);
-    
-    
+
+
     Task<ServiceResult<DateTime>> MarkConversationAsReadAsync(
+        Guid conversationId,
+        Guid userId,
+        CancellationToken ct = default);
+
+    Task<ServiceResult<ConversationDetailsDto>> GetConversationByIdAsync(
         Guid conversationId,
         Guid userId,
         CancellationToken ct = default);
@@ -37,6 +42,40 @@ public class ChatService : IChatService
     public ChatService(IUnitOfWork uow)
     {
         _uow = uow;
+    }
+    public async Task<ServiceResult<ConversationDetailsDto>> GetConversationByIdAsync(
+        Guid conversationId,
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        var conversation = await _uow.Repository<Conversation>()
+            .Query()
+            .Where(c =>
+                c.Id == conversationId &&
+                c.Participants.Any(p => p.UserId == userId))
+            .Select(c => new ConversationDetailsDto
+            {
+                Id = c.Id,
+                TicketId = c.TicketId,
+                TicketTitle = c.Ticket.Title,
+                CreatedAt = c.CreatedAt,
+
+                Participants = c.Participants
+                    .Select(p => new ConversationParticipantDto
+                    {
+                        UserId = p.UserId,
+                        LastReadAt = p.LastReadAt
+                    })
+                    .ToList()
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (conversation is null)
+            return ServiceResult<ConversationDetailsDto>
+                .NotFound("Conversation not found.");
+
+        return ServiceResult<ConversationDetailsDto>
+            .Success(conversation);
     }
 
     public async Task<ServiceResult<ConversationMessage>> SendMessageAsync(
@@ -78,7 +117,7 @@ public class ChatService : IChatService
 
         return ServiceResult<ConversationMessage>.Created(message);
     }
-    
+
     public async Task<ServiceResult<Guid>> GetOrCreateConversation(
         Guid ticketId, Guid userId, CancellationToken ct = default)
     {
@@ -110,8 +149,8 @@ public class ChatService : IChatService
 
         return ServiceResult<Guid>.Success(conversation.Id);
     }
-    
-    
+
+
     public async Task<ServiceResult<List<ConversationMessage>>> GetMessages(
         Guid conversationId, Guid userId, Guid? beforeMessageId, int take = 20, CancellationToken ct = default)
     {
@@ -128,7 +167,7 @@ public class ChatService : IChatService
                             .Query()
                             .AnyAsync(ur => ur.UserId == userId && ur.DepartmentId == conversation.Ticket.DepartmentId, ct);
 
-    
+
         if (!canAccess)
             return ServiceResult<List<ConversationMessage>>.NotFound("Conversation not found.");
 
@@ -153,7 +192,7 @@ public class ChatService : IChatService
 
         return ServiceResult<List<ConversationMessage>>.Success(messages);
     }
-    
+
     public async Task<ServiceResult<List<ConversationSummaryDto>>> GetMyConversations(
         Guid userId,
         CancellationToken ct = default)
