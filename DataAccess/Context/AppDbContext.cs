@@ -141,13 +141,9 @@ public class AppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasData(
-                new Department
-                {
-                    Id = int.Parse("1"),
-                    Code = "IT",
-                    Name = "IT Support",
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                }
+                new Department { Id = 1, Code = "ROADS",      Name = "Roads & Infrastructure", CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Department { Id = 2, Code = "SANITATION", Name = "Sanitation",               CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Department { Id = 3, Code = "LIGHTING",   Name = "Street Lighting",          CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         });
 
@@ -165,27 +161,10 @@ public class AppDbContext
                 .IsUnique();
 
             entity.HasData(
-                new Role
-                {
-                    Id = int.Parse("1"),
-                    Code = "Citizen",
-                    IsDepartmentScoped = false,
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                },
-                new Role
-                {
-                    Id = int.Parse("2"),
-                    Code = "Agent",
-                    IsDepartmentScoped = true,
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                },
-                new Role
-                {
-                    Id = int.Parse("3"),
-                    Code = "Admin",
-                    IsDepartmentScoped = false,
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                }
+                new Role { Id = 1, Code = "Admin",          IsDepartmentScoped = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Role { Id = 2, Code = "DepartmentHead", IsDepartmentScoped = true,  CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Role { Id = 3, Code = "Employee",       IsDepartmentScoped = true,  CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Role { Id = 4, Code = "Citizen",        IsDepartmentScoped = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         });
 
@@ -237,13 +216,10 @@ public class AppDbContext
                 .IsUnique();
 
             entity.HasData(
-                new TicketPriority
-                {
-                    Id = int.Parse("2"),
-                    Code = "Normal",
-                    SortOrder = int.Parse("1"),
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                }
+                new TicketPriority { Id = 1, Code = "Low",    SortOrder = 1, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new TicketPriority { Id = 2, Code = "Medium", SortOrder = 2, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new TicketPriority { Id = 3, Code = "High",   SortOrder = 3, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new TicketPriority { Id = 4, Code = "Urgent", SortOrder = 4, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         });
 
@@ -261,13 +237,12 @@ public class AppDbContext
                 .IsUnique();
 
             entity.HasData(
-                new TicketStatus
-                {
-                    Id = int.Parse("1"),
-                    Code = "Open",
-                    IsTerminal = false,
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                }
+                new TicketStatus { Id = 1, Code = "Open",       IsTerminal = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new TicketStatus { Id = 2, Code = "InProgress",  IsTerminal = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new TicketStatus { Id = 3, Code = "OnHold",      IsTerminal = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new TicketStatus { Id = 4, Code = "Resolved",    IsTerminal = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new TicketStatus { Id = 5, Code = "Closed",      IsTerminal = true,  CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new TicketStatus { Id = 6, Code = "Cancelled",   IsTerminal = true,  CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         });
 
@@ -295,14 +270,10 @@ public class AppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasData(
-                new Category
-                {
-                    Id = int.Parse("1"),
-                    Name = "General",
-                    DepartmentId = int.Parse("1"),
-                    DefaultPriorityId = int.Parse("2"),
-                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-                }
+                new Category { Id = 1, Name = "Pothole",             DepartmentId = 1, DefaultPriorityId = 3, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Category { Id = 2, Name = "Broken Street Light", DepartmentId = 3, DefaultPriorityId = 2, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Category { Id = 3, Name = "Uncollected Bins",    DepartmentId = 2, DefaultPriorityId = 2, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Category { Id = 4, Name = "Water Leak",          DepartmentId = 1, DefaultPriorityId = 4, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         });
 
