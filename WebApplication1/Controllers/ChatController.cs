@@ -63,19 +63,17 @@ public class ChatController : ControllerBase
     [HttpGet("conversations")]
     public async Task<ActionResult> GetMyConversations()
     {
-        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
         var result = await _chatService.GetMyConversations(userId);
 
-        var conversations = result.Data!.Select(c => new
-        {
-            id = c.Id,
-            ticketId = c.TicketId,
-            ticketTitle = c.Ticket.Title,
-            createdAt = c.CreatedAt
-        });
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
 
-        return Ok(conversations);
+        return Ok(result.Data);
     }
     
     [HttpPost("conversations/{conversationId}/messages")]
@@ -103,6 +101,29 @@ public class ChatController : ControllerBase
             .SendAsync("ReceiveMessage", response);
 
         return StatusCode(StatusCodes.Status201Created, response);
+    }
+    
+    [HttpPatch("conversations/{conversationId}/read")]
+    public async Task<ActionResult> MarkConversationAsRead(
+        Guid conversationId)
+    {
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.MarkConversationAsReadAsync(
+            conversationId,
+            userId);
+
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
+
+        return Ok(new
+        {
+            conversationId,
+            lastReadAt = result.Data
+        });
     }
     public class SendMessageRequest
     {
