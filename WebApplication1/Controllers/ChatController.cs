@@ -103,7 +103,7 @@ public class ChatController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, response);
     }
     
-    [HttpPatch("conversations/{conversationId}/read")]
+    [HttpPost("conversations/{conversationId}/read")]
     public async Task<ActionResult> MarkConversationAsRead(
         Guid conversationId)
     {
