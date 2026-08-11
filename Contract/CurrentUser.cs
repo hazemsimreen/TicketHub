@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace BusinessLogic
 {
@@ -10,6 +9,7 @@ namespace BusinessLogic
         public string? UserName => null;
         public string? Email => null;
         public bool IsAuthenticated => false;
+        public Guid? DepartmentId => null;
         public Guid? PrimaryDepartmentId => null;
         public IReadOnlyList<string> Roles => Array.Empty<string>();
         public bool IsInRole(string roleCode) => false;

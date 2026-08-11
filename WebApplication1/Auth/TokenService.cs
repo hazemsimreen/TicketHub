@@ -2,17 +2,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using BusinessLogic.Auth;
 using DataAccess.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace API.Auth;
-
-public interface ITokenService
-{
-    (string Token, DateTime ExpiresUtc) CreateAccessToken(User user);
-    string CreateRefreshToken();
-}
 
 public class TokenService : ITokenService
 {
@@ -52,9 +47,10 @@ public class TokenService : ITokenService
         foreach (var userRole in user.UserRoles)
         {
             if (userRole.Role is not null)
+            {
                 claims.Add(new Claim("role", userRole.Role.Code));
+            }
         }
-      
 
         if (user.PrimaryDepartmentId is not null)
             claims.Add(new Claim("dept", user.PrimaryDepartmentId.ToString()!));

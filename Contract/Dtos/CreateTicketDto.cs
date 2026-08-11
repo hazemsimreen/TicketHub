@@ -1,9 +1,7 @@
-﻿using DataAccess.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace Contract.Dtos
 {
-
     public class CreateTicketDto
     {
         [Required]
