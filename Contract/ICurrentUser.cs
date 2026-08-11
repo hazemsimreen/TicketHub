@@ -1,20 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+namespace BusinessLogic;
 
-namespace BusinessLogic
+public interface ICurrentUser
 {
-    public interface ICurrentUser
-    {
-        string? UserId { get; }
-        string? UserName { get; }
-        string? Email { get; }
-        bool IsAuthenticated { get; }
-
-
-        // جديد — لازم للـ Access Filter بكل الـ services (مش بس Tickets)
-        Guid? PrimaryDepartmentId { get; }
-        IReadOnlyList<string> Roles { get; }
-        bool IsInRole(string roleCode);
-    }
+    string? UserId { get; }
+    string? UserName { get; }
+    string? Email { get; }
+    bool IsAuthenticated { get; }
+    IReadOnlyList<string> Roles { get; }
+    Guid? DepartmentId { get; }
+    Guid? PrimaryDepartmentId => DepartmentId;
+    bool IsInRole(string roleCode);
 }

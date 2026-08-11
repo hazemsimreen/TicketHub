@@ -1,6 +1,6 @@
-﻿using API.Auth;
+using API.Auth;
 using BusinessLogic.Abstractions;
-using BusinessLogic.ServiceResult;
+using BusinessLogic.Common;
 using Contract.Dtos;
 using DataAccess.Context;
 using DataAccess.Models;

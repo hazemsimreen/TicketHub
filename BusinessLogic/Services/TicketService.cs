@@ -1,5 +1,5 @@
-﻿using BusinessLogic.Abstractions;
-using BusinessLogic.ServiceResult;
+using BusinessLogic.Abstractions;
+using BusinessLogic.Common;
 using Contract.Dtos;
 using DataAccess.Models;
 using Microsoft.AspNetCore.Identity;
