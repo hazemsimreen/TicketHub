@@ -103,7 +103,7 @@ public class ChatController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, response);
     }
     
-    [HttpPatch("conversations/{conversationId}/read")]
+    [HttpPost("conversations/{conversationId}/read")]
     public async Task<ActionResult> MarkConversationAsRead(
         Guid conversationId)
     {
@@ -125,8 +125,54 @@ public class ChatController : ControllerBase
             lastReadAt = result.Data
         });
     }
+    [HttpGet("conversations/{conversationId}")]
+    public async Task<ActionResult> GetConversationById(
+        Guid conversationId)
+    {
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.GetConversationByIdAsync(
+            conversationId,
+            userId);
+
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
+
+        return Ok(result.Data);
+    }
+    [HttpPost("conversations/{conversationId}/participants")]
+    public async Task<ActionResult> AddParticipant(
+        Guid conversationId,
+        [FromBody] AddParticipantRequest request)
+    {
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.AddParticipantAsync(
+            conversationId,
+            userId,
+            request.UserId);
+
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
+
+        return StatusCode(StatusCodes.Status201Created, new
+        {
+            conversationId,
+            userId = request.UserId
+        });
+    }
     public class SendMessageRequest
     {
         public string Body { get; set; } = string.Empty;
+    }
+    public class AddParticipantRequest
+    {
+        public Guid UserId { get; set; }
     }
 }
