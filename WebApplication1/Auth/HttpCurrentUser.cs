@@ -35,6 +35,12 @@ public class HttpCurrentUser : ICurrentUser
             ?? Principal?.FindFirstValue("dept"), out var id)
                 ? id : null;
 
+    public int? PrimaryDepartmentId =>
+        int.TryParse(
+            Principal?.FindFirstValue(AppClaimTypes.DepartmentId)
+            ?? Principal?.FindFirstValue("dept"), out var departmentId)
+                ? departmentId : null;
+
     public IReadOnlyList<string> Roles =>
         Principal?.FindAll(AppClaimTypes.Role).Select(c => c.Value)
         .Concat(Principal?.FindAll(ClaimTypes.Role).Select(c => c.Value) ?? [])
