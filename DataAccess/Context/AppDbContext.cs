@@ -21,6 +21,9 @@ public class AppDbContext
     public DbSet<TicketStatus> TicketStatuses => Set<TicketStatus>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Ticket> Tickets => Set<Ticket>();
+    public DbSet<Agent> Agents => Set<Agent>();
+    public DbSet<AgentProfile> AgentProfiles => Set<AgentProfile>();
+    public DbSet<Skill> Skills => Set<Skill>();
 
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ConversationParticipant> ConversationParticipants =>
@@ -162,8 +165,8 @@ public class AppDbContext
 
             entity.HasData(
                 new Role { Id = 1, Code = "Admin",          IsDepartmentScoped = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new Role { Id = 2, Code = "DepartmentHead", IsDepartmentScoped = true,  CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new Role { Id = 3, Code = "Employee",       IsDepartmentScoped = true,  CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Role { Id = 2, Code = "Supervisor", IsDepartmentScoped = true,  CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Role { Id = 3, Code = "Agent",       IsDepartmentScoped = true,  CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
                 new Role { Id = 4, Code = "Citizen",        IsDepartmentScoped = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         });
@@ -709,6 +712,6 @@ public class AppDbContext
                   .HasForeignKey(x => x.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
+        modelBuilder.ApplyOrganisationStaffCore();
     }
 }
-
