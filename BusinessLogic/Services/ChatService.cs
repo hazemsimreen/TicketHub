@@ -120,6 +120,22 @@ public class ChatService : IChatService
             return ServiceResult<Guid>.Conflict(
                 "A conversation already exists for this ticket.");
 
+        var usersToAdd = participantIds
+            .Append(requestingUserId)
+            .Distinct()
+            .ToList();
+
+        var existingUserIds = await _userManager.Users
+            .Where(u => usersToAdd.Contains(u.Id))
+            .Select(u => u.Id)
+            .ToListAsync(ct);
+
+        if (existingUserIds.Count != usersToAdd.Count)
+        {
+            return ServiceResult<Guid>
+                .NotFound("One or more participants were not found.");
+        }
+
         var conversationId = Guid.NewGuid();
 
         var conversation = new Conversation
@@ -130,11 +146,6 @@ public class ChatService : IChatService
 
         await _uow.Repository<Conversation>()
             .AddAsync(conversation, ct);
-
-        var usersToAdd = participantIds
-            .Append(requestingUserId)
-            .Distinct()
-            .ToList();
 
         foreach (var userId in usersToAdd)
         {
