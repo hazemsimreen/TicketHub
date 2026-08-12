@@ -3,6 +3,7 @@ using DataAccess.Models;
 using Microsoft.EntityFrameworkCore;
 using TicketHub.DataAccess.Repositories;
 using Contract.Dtos;
+using Microsoft.AspNetCore.Identity;
 namespace BusinessLogic.Services;
 using Result = BusinessLogic.Common.ServiceResult;
 
@@ -63,10 +64,14 @@ public interface IChatService
 public class ChatService : IChatService
 {
     private readonly IUnitOfWork _uow;
+    private readonly UserManager<User> _userManager;
 
-    public ChatService(IUnitOfWork uow)
+    public ChatService(
+        IUnitOfWork uow,
+        UserManager<User> userManager)
     {
         _uow = uow;
+        _userManager = userManager;
     }
     private async Task<bool> IsActiveParticipantAsync(
         Guid conversationId,
@@ -237,6 +242,14 @@ public class ChatService : IChatService
         {
             return ServiceResult<bool>
                 .NotFound("Conversation not found.");
+        }
+        var userToAdd = await _userManager.FindByIdAsync(
+            userIdToAdd.ToString());
+
+        if (userToAdd is null)
+        {
+            return ServiceResult<bool>
+                .NotFound("User not found.");
         }
 
         var existingParticipant = await _uow.Repository<ConversationParticipant>()
