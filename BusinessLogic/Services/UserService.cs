@@ -609,6 +609,21 @@ public class UserService : IUserService
         await _userManager
             .UpdateSecurityStampAsync(user);
 
+        var revokedAt = DateTime.UtcNow;
+
+        var refreshTokens =
+            await _context.RefreshTokens
+                .Where(rt =>
+                    rt.UserId == id &&
+                    rt.RevokedAt == null)
+                .ToListAsync(ct);
+
+        foreach (var refreshToken in refreshTokens)
+        {
+            refreshToken.RevokedAt = revokedAt;
+        }
+
+        await _context.SaveChangesAsync(ct);
         return Result.NoContent();
     }
 
@@ -695,4 +710,3 @@ public class UserService : IUserService
         return Result.NoContent();
     }
 }
-
