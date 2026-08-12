@@ -167,6 +167,73 @@ public class ChatController : ControllerBase
             userId = request.UserId
         });
     }
+    [HttpDelete("conversations/{conversationId}/participants/me")]
+    public async Task<ActionResult> LeaveConversation(
+        Guid conversationId)
+    {
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.LeaveConversationAsync(
+            conversationId,
+            userId);
+
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
+
+        return NoContent();
+    }
+    [HttpDelete("messages/{messageId}")]
+    public async Task<ActionResult> DeleteMessage(
+        Guid messageId)
+    {
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.DeleteMessageAsync(
+            messageId,
+            userId);
+
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
+
+        await _hub.Clients
+            .Group(result.Data.ToString())
+            .SendAsync("MessageDeleted", new
+            {
+                messageId
+            });
+
+        return NoContent();
+    }
+    [HttpPost("conversations")]
+    public async Task<ActionResult> CreateConversation(
+        [FromBody] CreateConversationRequest request)
+    {
+        var userId = Guid.Parse(
+            User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var result = await _chatService.CreateConversationAsync(
+            request.TicketId,
+            userId,
+            request.ParticipantIds);
+
+        if (!result.IsSuccess)
+            return StatusCode(
+                result.StatusCode,
+                new { message = result.ErrorMessage });
+
+        return StatusCode(
+            StatusCodes.Status201Created,
+            new
+            {
+                conversationId = result.Data
+            });
+    }
     public class SendMessageRequest
     {
         public string Body { get; set; } = string.Empty;
@@ -174,5 +241,12 @@ public class ChatController : ControllerBase
     public class AddParticipantRequest
     {
         public Guid UserId { get; set; }
+    }
+    public class CreateConversationRequest
+    {
+        public Guid TicketId { get; set; }
+
+        public List<Guid> ParticipantIds { get; set; }
+            = new();
     }
 }
