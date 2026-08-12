@@ -19,6 +19,8 @@ public class User : IdentityUser<Guid>
 
     public string? DeletedBy { get; set; }
 
+    public bool IsActive { get; set; } = true;
+
     public string UserType { get; set; } = string.Empty;
 
     public int? PrimaryDepartmentId { get; set; }
