@@ -54,9 +54,11 @@ public interface IChatService
         Guid requestingUserId,
         List<Guid> participantIds,
         CancellationToken ct = default);
+    
 
 
 }
+
 
 public class ChatService : IChatService
 {
@@ -65,6 +67,19 @@ public class ChatService : IChatService
     public ChatService(IUnitOfWork uow)
     {
         _uow = uow;
+    }
+    private async Task<bool> IsActiveParticipantAsync(
+        Guid conversationId,
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        return await _uow.Repository<ConversationParticipant>()
+            .Query()
+            .AnyAsync(
+                p => p.ConversationId == conversationId &&
+                     p.UserId == userId &&
+                     !p.IsDeleted,
+                ct);
     }
     public async Task<ServiceResult<Guid>> CreateConversationAsync(
         Guid ticketId,
@@ -179,7 +194,8 @@ public class ChatService : IChatService
             .Query()
             .FirstOrDefaultAsync(
                 p => p.ConversationId == conversationId &&
-                     p.UserId == userId,
+                     p.UserId == userId &&
+                     !p.IsDeleted,
                 ct);
 
         if (participant is null)
@@ -193,38 +209,61 @@ public class ChatService : IChatService
         return Result.NoContent();
     }
 
+   
     public async Task<ServiceResult<bool>> AddParticipantAsync(
         Guid conversationId,
         Guid requestingUserId,
         Guid userIdToAdd,
         CancellationToken ct = default)
     {
-        var conversation = await _uow.Repository<Conversation>()
-            .Query()
-            .Include(c => c.Ticket)
-            .FirstOrDefaultAsync(c => c.Id == conversationId, ct);
-
-        if (conversation is null)
-            return ServiceResult<bool>.NotFound("Conversation not found.");
-
-        var canAccess = conversation.Ticket.SubmittedByUserId == requestingUserId
-                        || await _uow.Repository<UserRole>()
-                            .Query()
-                            .AnyAsync(ur => ur.UserId == requestingUserId && ur.DepartmentId == conversation.Ticket.DepartmentId, ct);
-
-        if (!canAccess)
-            return ServiceResult<bool>.NotFound("Conversation not found.");
-
-        var alreadyParticipant = await _uow.Repository<ConversationParticipant>()
+        var conversationExists = await _uow.Repository<Conversation>()
             .Query()
             .AnyAsync(
+                c => c.Id == conversationId,
+                ct);
+
+        if (!conversationExists)
+        {
+            return ServiceResult<bool>
+                .NotFound("Conversation not found.");
+        }
+
+        var requesterIsParticipant = await IsActiveParticipantAsync(
+            conversationId,
+            requestingUserId,
+            ct);
+
+        if (!requesterIsParticipant)
+        {
+            return ServiceResult<bool>
+                .NotFound("Conversation not found.");
+        }
+
+        var existingParticipant = await _uow.Repository<ConversationParticipant>()
+            .Query()
+            .FirstOrDefaultAsync(
                 p => p.ConversationId == conversationId &&
                      p.UserId == userIdToAdd,
                 ct);
 
-        if (alreadyParticipant)
-            return ServiceResult<bool>.Conflict(
-                "User is already a participant.");
+        if (existingParticipant is not null)
+        {
+            if (!existingParticipant.IsDeleted)
+            {
+                return ServiceResult<bool>
+                    .Conflict("User is already a participant.");
+            }
+
+            existingParticipant.IsDeleted = false;
+            existingParticipant.DeletedAt = null;
+            existingParticipant.DeletedBy = null;
+            existingParticipant.UpdatedAt = DateTime.UtcNow;
+
+            await _uow.SaveChangesAsync(ct);
+
+            return ServiceResult<bool>
+                .Created(true);
+        }
 
         var participant = new ConversationParticipant
         {
@@ -237,9 +276,9 @@ public class ChatService : IChatService
 
         await _uow.SaveChangesAsync(ct);
 
-        return ServiceResult<bool>.Created(true);
+        return ServiceResult<bool>
+            .Created(true);
     }
-
     public async Task<ServiceResult<ConversationDetailsDto>> GetConversationByIdAsync(
         Guid conversationId,
         Guid userId,
@@ -248,19 +287,19 @@ public class ChatService : IChatService
         var conversation = await _uow.Repository<Conversation>()
             .Query()
             .Include(c => c.Ticket)
-            .Include(c => c.Participants)
+            .Include(c => c.Participants.Where(p => !p.IsDeleted))
             .FirstOrDefaultAsync(c => c.Id == conversationId, ct);
 
         if (conversation is null)
-            return ServiceResult<ConversationDetailsDto>.NotFound("Conversation not found.");
+            return ServiceResult<ConversationDetailsDto>
+                .NotFound("Conversation not found.");
 
-        var canAccess = conversation.Ticket.SubmittedByUserId == userId
-                        || await _uow.Repository<UserRole>()
-                            .Query()
-                            .AnyAsync(ur => ur.UserId == userId && ur.DepartmentId == conversation.Ticket.DepartmentId, ct);
+        var isParticipant = conversation.Participants
+            .Any(p => p.UserId == userId);
 
-        if (!canAccess)
-            return ServiceResult<ConversationDetailsDto>.NotFound("Conversation not found.");
+        if (!isParticipant)
+            return ServiceResult<ConversationDetailsDto>
+                .NotFound("Conversation not found.");
 
         var dto = new ConversationDetailsDto
         {
@@ -268,6 +307,7 @@ public class ChatService : IChatService
             TicketId = conversation.TicketId,
             TicketTitle = conversation.Ticket.Title,
             CreatedAt = conversation.CreatedAt,
+
             Participants = conversation.Participants
                 .Select(p => new ConversationParticipantDto
                 {
@@ -287,105 +327,203 @@ public class ChatService : IChatService
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(body))
-            return ServiceResult<ConversationMessage>.BadRequest("Message cannot be empty.");
+        {
+            return ServiceResult<ConversationMessage>
+                .BadRequest("Message cannot be empty.");
+        }
 
-        var conversation = await _uow.Repository<Conversation>()
+        var conversationExists = await _uow.Repository<Conversation>()
             .Query()
-            .Include(c => c.Ticket)
-            .FirstOrDefaultAsync(c => c.Id == conversationId, ct);
+            .AnyAsync(
+                c => c.Id == conversationId,
+                ct);
 
-        if (conversation is null)
-            return ServiceResult<ConversationMessage>.NotFound("Conversation not found.");
+        if (!conversationExists)
+        {
+            return ServiceResult<ConversationMessage>
+                .NotFound("Conversation not found.");
+        }
 
-        var canSend = conversation.Ticket.SubmittedByUserId == senderUserId
-            || await _uow.Repository<UserRole>()
-                .Query()
-                .AnyAsync(ur => ur.UserId == senderUserId
-                             && ur.DepartmentId == conversation.Ticket.DepartmentId, ct);
+        var isParticipant = await IsActiveParticipantAsync(
+            conversationId,
+            senderUserId,
+            ct);
 
-        if (!canSend)
-            return ServiceResult<ConversationMessage>.Forbidden("You cannot post in this conversation.");
+        if (!isParticipant)
+        {
+            return ServiceResult<ConversationMessage>
+                .NotFound("Conversation not found.");
+        }
 
         var message = new ConversationMessage
         {
+            Id = Guid.NewGuid(),
             ConversationId = conversationId,
             SenderUserId = senderUserId,
-            Body = body,
+            Body = body.Trim(),
             IsSystemGenerated = false
         };
 
-        await _uow.Repository<ConversationMessage>().AddAsync(message, ct);
+        await _uow.Repository<ConversationMessage>()
+            .AddAsync(message, ct);
+
         await _uow.SaveChangesAsync(ct);
 
-        return ServiceResult<ConversationMessage>.Created(message);
+        return ServiceResult<ConversationMessage>
+            .Created(message);
     }
 
-    public async Task<ServiceResult<Guid>> GetOrCreateConversation(
-        Guid ticketId, Guid userId, CancellationToken ct = default)
+   public async Task<ServiceResult<Guid>> GetOrCreateConversation(
+    Guid ticketId,
+    Guid userId,
+    CancellationToken ct = default)
+{
+    var ticket = await _uow.Repository<Ticket>()
+        .Query()
+        .FirstOrDefaultAsync(
+            t => t.Id == ticketId,
+            ct);
+
+    if (ticket is null)
     {
-        var ticket = await _uow.Repository<Ticket>()
-            .Query()
-            .FirstOrDefaultAsync(t => t.Id == ticketId, ct);
-
-        if (ticket is null)
-            return ServiceResult<Guid>.NotFound("Ticket not found.");
-
-        var canAccess = ticket.SubmittedByUserId == userId
-                        || await _uow.Repository<UserRole>()
-                            .Query()
-                            .AnyAsync(ur => ur.UserId == userId && ur.DepartmentId == ticket.DepartmentId, ct);
-
-        if (!canAccess)
-            return ServiceResult<Guid>.Forbidden("You cannot access this ticket's conversation.");
-
-        var existing = await _uow.Repository<Conversation>()
-            .Query()
-            .FirstOrDefaultAsync(c => c.TicketId == ticketId, ct);
-
-        if (existing is not null)
-            return ServiceResult<Guid>.Success(existing.Id);
-
-        var conversation = new Conversation { TicketId = ticketId };
-        await _uow.Repository<Conversation>().AddAsync(conversation, ct);
-        await _uow.SaveChangesAsync(ct);
-
-        return ServiceResult<Guid>.Success(conversation.Id);
+        return ServiceResult<Guid>
+            .NotFound("Ticket not found.");
     }
+
+    var canAccess =
+        ticket.SubmittedByUserId == userId ||
+        await _uow.Repository<UserRole>()
+            .Query()
+            .AnyAsync(
+                ur => ur.UserId == userId &&
+                      ur.DepartmentId == ticket.DepartmentId,
+                ct);
+
+    if (!canAccess)
+    {
+        return ServiceResult<Guid>
+            .Forbidden("You cannot access this ticket's conversation.");
+    }
+
+    var existingConversation = await _uow.Repository<Conversation>()
+        .Query()
+        .FirstOrDefaultAsync(
+            c => c.TicketId == ticketId,
+            ct);
+
+    if (existingConversation is not null)
+    {
+        var existingParticipant =
+            await _uow.Repository<ConversationParticipant>()
+                .Query()
+                .FirstOrDefaultAsync(
+                    p => p.ConversationId == existingConversation.Id &&
+                         p.UserId == userId,
+                    ct);
+
+        if (existingParticipant is null)
+        {
+            var participant = new ConversationParticipant
+            {
+                ConversationId = existingConversation.Id,
+                UserId = userId
+            };
+
+            await _uow.Repository<ConversationParticipant>()
+                .AddAsync(participant, ct);
+
+            await _uow.SaveChangesAsync(ct);
+        }
+        else if (existingParticipant.IsDeleted)
+        {
+            existingParticipant.IsDeleted = false;
+            existingParticipant.DeletedAt = null;
+            existingParticipant.DeletedBy = null;
+            existingParticipant.UpdatedAt = DateTime.UtcNow;
+
+            await _uow.SaveChangesAsync(ct);
+        }
+
+        return ServiceResult<Guid>
+            .Success(existingConversation.Id);
+    }
+
+    var conversation = new Conversation
+    {
+        Id = Guid.NewGuid(),
+        TicketId = ticketId
+    };
+
+    await _uow.Repository<Conversation>()
+        .AddAsync(conversation, ct);
+
+    var newParticipant = new ConversationParticipant
+    {
+        ConversationId = conversation.Id,
+        UserId = userId
+    };
+
+    await _uow.Repository<ConversationParticipant>()
+        .AddAsync(newParticipant, ct);
+
+    await _uow.SaveChangesAsync(ct);
+
+    return ServiceResult<Guid>
+        .Success(conversation.Id);
+}
 
 
     public async Task<ServiceResult<List<ConversationMessage>>> GetMessages(
-        Guid conversationId, Guid userId, Guid? beforeMessageId, int take = 20, CancellationToken ct = default)
+        Guid conversationId,
+        Guid userId,
+        Guid? beforeMessageId,
+        int take = 20,
+        CancellationToken ct = default)
     {
-        var conversation = await _uow.Repository<Conversation>()
+        var conversationExists = await _uow.Repository<Conversation>()
             .Query()
-            .Include(c => c.Ticket)
-            .FirstOrDefaultAsync(c => c.Id == conversationId, ct);
+            .AnyAsync(
+                c => c.Id == conversationId,
+                ct);
 
-        if (conversation is null)
-            return ServiceResult<List<ConversationMessage>>.NotFound("Conversation not found.");
+        if (!conversationExists)
+        {
+            return ServiceResult<List<ConversationMessage>>
+                .NotFound("Conversation not found.");
+        }
 
-        var canAccess = conversation.Ticket.SubmittedByUserId == userId
-                        || await _uow.Repository<UserRole>()
-                            .Query()
-                            .AnyAsync(ur => ur.UserId == userId && ur.DepartmentId == conversation.Ticket.DepartmentId, ct);
+        var isParticipant = await IsActiveParticipantAsync(
+            conversationId,
+            userId,
+            ct);
 
-
-        if (!canAccess)
-            return ServiceResult<List<ConversationMessage>>.NotFound("Conversation not found.");
+        if (!isParticipant)
+        {
+            return ServiceResult<List<ConversationMessage>>
+                .NotFound("Conversation not found.");
+        }
 
         var query = _uow.Repository<ConversationMessage>()
             .Query()
             .Where(m =>
                 m.ConversationId == conversationId &&
                 !m.IsDeleted);
+
         if (beforeMessageId is not null)
         {
             var cursor = await _uow.Repository<ConversationMessage>()
                 .Query()
-                .FirstOrDefaultAsync(m => m.Id == beforeMessageId, ct);
+                .FirstOrDefaultAsync(
+                    m => m.Id == beforeMessageId &&
+                         m.ConversationId == conversationId &&
+                         !m.IsDeleted,
+                    ct);
 
             if (cursor is not null)
-                query = query.Where(m => m.CreatedAt < cursor.CreatedAt);
+            {
+                query = query.Where(
+                    m => m.CreatedAt < cursor.CreatedAt);
+            }
         }
 
         var messages = await query
@@ -393,24 +531,20 @@ public class ChatService : IChatService
             .Take(take)
             .ToListAsync(ct);
 
-        return ServiceResult<List<ConversationMessage>>.Success(messages);
+        return ServiceResult<List<ConversationMessage>>
+            .Success(messages);
     }
 
     public async Task<ServiceResult<List<ConversationSummaryDto>>> GetMyConversations(
         Guid userId,
         CancellationToken ct = default)
     {
-        var myDepartmentIds = await _uow.Repository<UserRole>()
-            .Query()
-            .Where(ur => ur.UserId == userId && ur.DepartmentId != null)
-            .Select(ur => ur.DepartmentId!.Value)
-            .ToListAsync(ct);
-
         var conversations = await _uow.Repository<Conversation>()
             .Query()
             .Where(c =>
-                c.Ticket.SubmittedByUserId == userId ||
-                myDepartmentIds.Contains(c.Ticket.DepartmentId))
+                c.Participants.Any(
+                    p => p.UserId == userId &&
+                         !p.IsDeleted))
             .Select(c => new ConversationSummaryDto
             {
                 Id = c.Id,
@@ -419,27 +553,33 @@ public class ChatService : IChatService
                 CreatedAt = c.CreatedAt,
 
                 LastMessage = c.Messages
+                    .Where(m => !m.IsDeleted)
                     .OrderByDescending(m => m.CreatedAt)
                     .Select(m => m.Body)
                     .FirstOrDefault(),
 
                 LastMessageAt = c.Messages
+                    .Where(m => !m.IsDeleted)
                     .OrderByDescending(m => m.CreatedAt)
                     .Select(m => (DateTime?)m.CreatedAt)
                     .FirstOrDefault(),
 
                 UnreadCount = c.Messages.Count(m =>
+                    !m.IsDeleted &&
                     m.SenderUserId != userId &&
                     m.CreatedAt >
                     (
                         c.Participants
-                            .Where(p => p.UserId == userId)
+                            .Where(p =>
+                                p.UserId == userId &&
+                                !p.IsDeleted)
                             .Select(p => p.LastReadAt)
                             .FirstOrDefault()
                         ?? DateTime.MinValue
                     ))
             })
-            .OrderByDescending(c => c.LastMessageAt ?? c.CreatedAt)
+            .OrderByDescending(c =>
+                c.LastMessageAt ?? c.CreatedAt)
             .ToListAsync(ct);
 
         return ServiceResult<List<ConversationSummaryDto>>
@@ -450,56 +590,41 @@ public class ChatService : IChatService
         Guid userId,
         CancellationToken ct = default)
     {
-        var conversation = await _uow.Repository<Conversation>()
+        var conversationExists = await _uow.Repository<Conversation>()
             .Query()
-            .Include(c => c.Ticket)
-            .FirstOrDefaultAsync(c => c.Id == conversationId, ct);
+            .AnyAsync(
+                c => c.Id == conversationId,
+                ct);
 
-        if (conversation is null)
-            return ServiceResult<DateTime>.NotFound("Conversation not found.");
-
-        var canAccess =
-            conversation.Ticket.SubmittedByUserId == userId
-            || await _uow.Repository<UserRole>()
-                .Query()
-                .AnyAsync(
-                    ur => ur.UserId == userId
-                          && ur.DepartmentId == conversation.Ticket.DepartmentId,
-                    ct);
-
-        if (!canAccess)
-            return ServiceResult<DateTime>.Forbidden(
-                "You cannot access this conversation.");
+        if (!conversationExists)
+        {
+            return ServiceResult<DateTime>
+                .NotFound("Conversation not found.");
+        }
 
         var participant = await _uow.Repository<ConversationParticipant>()
             .Query()
             .FirstOrDefaultAsync(
-                p => p.ConversationId == conversationId
-                     && p.UserId == userId,
+                p => p.ConversationId == conversationId &&
+                     p.UserId == userId &&
+                     !p.IsDeleted,
                 ct);
-
-        var readAt = DateTime.UtcNow;
 
         if (participant is null)
         {
-            participant = new ConversationParticipant
-            {
-                ConversationId = conversationId,
-                UserId = userId,
-                LastReadAt = readAt
-            };
+            return ServiceResult<DateTime>
+                .NotFound("Conversation not found.");
+        }
 
-            await _uow.Repository<ConversationParticipant>()
-                .AddAsync(participant, ct);
-        }
-        else
-        {
-            participant.LastReadAt = readAt;
-            participant.UpdatedAt = readAt;
-        }
+        var readAt = DateTime.UtcNow;
+
+        participant.LastReadAt = readAt;
+        participant.UpdatedAt = readAt;
 
         await _uow.SaveChangesAsync(ct);
 
-        return ServiceResult<DateTime>.Success(readAt);
+        return ServiceResult<DateTime>
+            .Success(readAt);
     }
+   
 }
