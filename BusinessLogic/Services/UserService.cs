@@ -620,7 +620,9 @@ public class UserService : IUserService
 
         foreach (var refreshToken in refreshTokens)
         {
+            refreshToken.IsRevoked = true;
             refreshToken.RevokedAt = revokedAt;
+            refreshToken.RevokedReason = "User deactivated";
         }
 
         await _context.SaveChangesAsync(ct);
