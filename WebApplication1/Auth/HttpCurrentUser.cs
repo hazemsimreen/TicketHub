@@ -35,9 +35,12 @@ public class HttpCurrentUser : ICurrentUser
 
     public bool IsAuthenticated => Principal?.Identity?.IsAuthenticated ?? false;
 
-    public Guid? DepartmentId =>
-        Guid.TryParse(
-            Principal?.FindFirstValue("dept"), out var id)
+
+    public int? DepartmentId =>
+        int.TryParse(
+            Principal?.FindFirstValue(AppClaimTypes.DepartmentId)
+            ?? Principal?.FindFirstValue("dept"), out var id)
+
                 ? id : null;
 
     public int? PrimaryDepartmentId =>

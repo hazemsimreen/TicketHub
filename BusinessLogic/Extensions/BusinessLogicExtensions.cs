@@ -16,8 +16,14 @@ public static class BusinessLogicExtensions
         services.AddScoped<IAgentService, AgentService>();
         services.AddScoped<IUserService, UserService>();
 
+        // تسجيل خدمات Business Logic هنا
+
         services.AddScoped<IRealtimeNotifier, NullRealtimeNotifier>();
+
         services.AddScoped<ITicketService, TicketService>();
+
+
+        services.AddSingleton<ITicketWorkflow, TicketWorkflow>();
 
         return services;
     }

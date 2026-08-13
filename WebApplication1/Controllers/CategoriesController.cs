@@ -4,7 +4,7 @@ using Contract.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-
+using Contract.Paged;
 namespace WebApplication1.Controllers;
 
 [ApiController]

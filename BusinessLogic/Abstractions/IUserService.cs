@@ -1,7 +1,7 @@
 using BusinessLogic.Common;
 using Contract.Dtos;
 using Result = BusinessLogic.Common.ServiceResult;
-
+using Contract.Paged;
 namespace BusinessLogic.Abstractions;
 
 public interface IUserService

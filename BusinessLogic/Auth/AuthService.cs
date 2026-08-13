@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using BusinessLogic.Common;
 using Contract.Dtos;
 using Contracts.Security;
@@ -7,47 +6,48 @@ using DataAccess.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using System.Security.Cryptography;
 
 namespace BusinessLogic.Auth;
 
 public interface IAuthService
 {
-    Task<ServiceResult<AuthResponse>>             RegisterAsync(RegisterRequest req, CancellationToken ct = default);
-    Task<ServiceResult<AuthResponse>>             LoginAsync(LoginRequest req, string? ip, string? ua, CancellationToken ct = default);
-    Task<ServiceResult<AuthResponse>>             RefreshAsync(string rawToken, string? ip, string? ua, CancellationToken ct = default);
-    Task<ServiceResult>                           LogoutAsync(string rawToken, CancellationToken ct = default);
-    Task<ServiceResult>                           LogoutAllAsync(string userId, CancellationToken ct = default);
-    Task<ServiceResult<MeResponse>>               GetMeAsync(string userId, CancellationToken ct = default);
-    Task<ServiceResult<MeResponse>>               UpdateMeAsync(string userId, UpdateMeRequest req, CancellationToken ct = default);
-    Task<ServiceResult>                           ChangePasswordAsync(string userId, ChangePasswordRequest req, CancellationToken ct = default);
-    Task<ServiceResult>                           ForgotPasswordAsync(string email, CancellationToken ct = default);
-    Task<ServiceResult>                           ResetPasswordAsync(ResetPasswordRequest req, CancellationToken ct = default);
-    Task<ServiceResult>                           ConfirmEmailAsync(ConfirmEmailRequest req, CancellationToken ct = default);
-    Task<ServiceResult>                           ResendConfirmationAsync(string email, CancellationToken ct = default);
+    Task<ServiceResult<AuthResponse>> RegisterAsync(RegisterRequest req, CancellationToken ct = default);
+    Task<ServiceResult<AuthResponse>> LoginAsync(LoginRequest req, string? ip, string? ua, CancellationToken ct = default);
+    Task<ServiceResult<AuthResponse>> RefreshAsync(string rawToken, string? ip, string? ua, CancellationToken ct = default);
+    Task<ServiceResult> LogoutAsync(string rawToken, CancellationToken ct = default);
+    Task<ServiceResult> LogoutAllAsync(string userId, CancellationToken ct = default);
+    Task<ServiceResult<MeResponse>> GetMeAsync(string userId, CancellationToken ct = default);
+    Task<ServiceResult<MeResponse>> UpdateMeAsync(string userId, UpdateMeRequest req, CancellationToken ct = default);
+    Task<ServiceResult> ChangePasswordAsync(string userId, ChangePasswordRequest req, CancellationToken ct = default);
+    Task<ServiceResult> ForgotPasswordAsync(string email, CancellationToken ct = default);
+    Task<ServiceResult> ResetPasswordAsync(ResetPasswordRequest req, CancellationToken ct = default);
+    Task<ServiceResult> ConfirmEmailAsync(ConfirmEmailRequest req, CancellationToken ct = default);
+    Task<ServiceResult> ResendConfirmationAsync(string email, CancellationToken ct = default);
     Task<ServiceResult<IReadOnlyList<SessionDto>>> GetSessionsAsync(string userId, CancellationToken ct = default);
-    Task<ServiceResult>                           RevokeSessionAsync(string userId, Guid sessionId, CancellationToken ct = default);
+    Task<ServiceResult> RevokeSessionAsync(string userId, Guid sessionId, CancellationToken ct = default);
 }
 
 public class AuthService : IAuthService
 {
     private readonly UserManager<User> _userManager;
-    private readonly ITokenService     _tokens;
-    private readonly IEmailSender      _email;
-    private readonly AppDbContext      _db;
-    private readonly IConfiguration    _config;
+    private readonly ITokenService _tokens;
+    private readonly IEmailSender _email;
+    private readonly AppDbContext _db;
+    private readonly IConfiguration _config;
 
     public AuthService(
         UserManager<User> userManager,
-        ITokenService     tokens,
-        IEmailSender      email,
-        AppDbContext      db,
-        IConfiguration    config)
+        ITokenService tokens,
+        IEmailSender email,
+        AppDbContext db,
+        IConfiguration config)
     {
         _userManager = userManager;
-        _tokens      = tokens;
-        _email       = email;
-        _db          = db;
-        _config      = config;
+        _tokens = tokens;
+        _email = email;
+        _db = db;
+        _config = config;
     }
 
     // ── Register ──────────────────────────────────────────────────────────────
@@ -56,10 +56,10 @@ public class AuthService : IAuthService
     {
         var user = new User
         {
-            UserName    = req.Email,
-            Email       = req.Email,
+            UserName = req.Email,
+            Email = req.Email,
             PhoneNumber = req.PhoneNumber,
-            UserType    = AppRoles.Citizen   // always Citizen — never set from body
+            UserType = AppRoles.Citizen   // always Citizen — never set from body
         };
 
         var result = await _userManager.CreateAsync(user, req.Password);
@@ -82,7 +82,7 @@ public class AuthService : IAuthService
             .FirstAsync(u => u.Id == user.Id, ct);
 
         var (access, expires) = _tokens.CreateAccessToken(fullUser);
-        var raw   = await IssueRefreshTokenAsync(user.Id, null, null, ct);
+        var raw = await IssueRefreshTokenAsync(user.Id, null, null, ct);
         var roles = fullUser.UserRoles.Select(ur => ur.Role.Code).ToList();
 
         return ServiceResult<AuthResponse>.Created(
@@ -115,7 +115,7 @@ public class AuthService : IAuthService
         await _userManager.ResetAccessFailedCountAsync(user);
 
         var (access, expires) = _tokens.CreateAccessToken(user);
-        var raw   = await IssueRefreshTokenAsync(user.Id, ip, ua, ct);
+        var raw = await IssueRefreshTokenAsync(user.Id, ip, ua, ct);
         var roles = user.UserRoles.Select(ur => ur.Role.Code).ToList();
 
         return ServiceResult<AuthResponse>.Success(
@@ -126,7 +126,7 @@ public class AuthService : IAuthService
     public async Task<ServiceResult<AuthResponse>> RefreshAsync(
         string rawToken, string? ip, string? ua, CancellationToken ct = default)
     {
-        var hash  = RefreshToken.Hash(rawToken);
+        var hash = RefreshToken.Hash(rawToken);
         var token = await _db.Set<RefreshToken>()
             .Include(t => t.User).ThenInclude(u => u.UserRoles).ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(t => t.TokenHash == hash, ct);
@@ -147,7 +147,7 @@ public class AuthService : IAuthService
 
         // Rotate
         token.IsUsed = true;
-        var newRaw   = await IssueRefreshTokenAsync(token.UserId, ip, ua, ct);
+        var newRaw = await IssueRefreshTokenAsync(token.UserId, ip, ua, ct);
 
         var (access, expires) = _tokens.CreateAccessToken(token.User);
         var roles = token.User.UserRoles.Select(ur => ur.Role.Code).ToList();
@@ -159,14 +159,14 @@ public class AuthService : IAuthService
     // ── Logout ────────────────────────────────────────────────────────────────
     public async Task<ServiceResult> LogoutAsync(string rawToken, CancellationToken ct = default)
     {
-        var hash  = RefreshToken.Hash(rawToken);
+        var hash = RefreshToken.Hash(rawToken);
         var token = await _db.Set<RefreshToken>()
             .FirstOrDefaultAsync(t => t.TokenHash == hash, ct);
 
         if (token is not null && !token.IsRevoked)
         {
-            token.IsRevoked     = true;
-            token.RevokedAt     = DateTime.UtcNow;
+            token.IsRevoked = true;
+            token.RevokedAt = DateTime.UtcNow;
             token.RevokedReason = "User logout";
             await _db.SaveChangesAsync(ct);
         }
@@ -243,9 +243,9 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(email);
         if (user is not null && !user.IsDeleted)
         {
-            var token    = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var frontend = _config["FrontendUrl"] ?? "http://localhost:3000";
-            var link     = $"{frontend}/reset-password" +
+            var link = $"{frontend}/reset-password" +
                            $"?email={Uri.EscapeDataString(user.Email!)}" +
                            $"&token={Uri.EscapeDataString(token)}";
             await _email.SendAsync(user.Email!, "Reset your password", link, ct);
@@ -306,9 +306,9 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(email);
         if (user is not null && !user.IsDeleted && !user.EmailConfirmed)
         {
-            var token    = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             var frontend = _config["FrontendUrl"] ?? "http://localhost:3000";
-            var link     = $"{frontend}/confirm-email" +
+            var link = $"{frontend}/confirm-email" +
                            $"?email={Uri.EscapeDataString(user.Email!)}" +
                            $"&token={Uri.EscapeDataString(token)}";
             await _email.SendAsync(user.Email!, "Confirm your email", link, ct);
@@ -345,8 +345,8 @@ public class AuthService : IAuthService
 
         if (token is null) return ServiceResult.NotFound("Session not found.");
 
-        token.IsRevoked     = true;
-        token.RevokedAt     = DateTime.UtcNow;
+        token.IsRevoked = true;
+        token.RevokedAt = DateTime.UtcNow;
         token.RevokedReason = "Revoked by user";
         await _db.SaveChangesAsync(ct);
 
@@ -360,12 +360,12 @@ public class AuthService : IAuthService
         var raw = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         _db.Set<RefreshToken>().Add(new RefreshToken
         {
-            Id          = Guid.NewGuid(),
-            UserId      = userId,
-            TokenHash   = RefreshToken.Hash(raw),
-            ExpiresAt   = DateTime.UtcNow.AddDays(14),
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            TokenHash = RefreshToken.Hash(raw),
+            ExpiresAt = DateTime.UtcNow.AddDays(14),
             CreatedByIp = ip,
-            UserAgent   = ua
+            UserAgent = ua
         });
         await _db.SaveChangesAsync(ct);
         return raw;
@@ -379,8 +379,8 @@ public class AuthService : IAuthService
 
         foreach (var t in tokens)
         {
-            t.IsRevoked     = true;
-            t.RevokedAt     = DateTime.UtcNow;
+            t.IsRevoked = true;
+            t.RevokedAt = DateTime.UtcNow;
             t.RevokedReason = reason;
         }
         await _db.SaveChangesAsync(ct);
@@ -389,7 +389,7 @@ public class AuthService : IAuthService
     private static MeResponse Map(User u) => new(
         u.Id.ToString(),
         u.UserName ?? string.Empty,
-        u.Email    ?? string.Empty,
+        u.Email ?? string.Empty,
         u.PhoneNumber,
         u.EmailConfirmed,
         u.UserRoles.Select(ur => ur.Role.Code).ToList(),

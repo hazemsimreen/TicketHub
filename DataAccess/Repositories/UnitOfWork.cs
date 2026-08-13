@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Text;
 
 namespace TicketHub.DataAccess.Repositories;
@@ -52,6 +53,15 @@ public class UnitOfWork : IUnitOfWork
 
         return (IRepository<T>)_repositories[type];
 
+    }
+
+    public void SetOriginalValue<TEntity, TProperty>(
+        TEntity entity,
+        Expression<Func<TEntity, TProperty>> propertyExpression,
+        TProperty value)
+        where TEntity : class
+    {
+        _context.Entry(entity).Property(propertyExpression).OriginalValue = value;
     }
 
 

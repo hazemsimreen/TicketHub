@@ -5,7 +5,7 @@ using DataAccess.Models;
 using Microsoft.EntityFrameworkCore;
 using TicketHub.DataAccess.Repositories;
 using Result = BusinessLogic.Common.ServiceResult;
-
+using Contract.Paged;
 namespace BusinessLogic.Services;
 
 public class DepartmentService : IDepartmentService

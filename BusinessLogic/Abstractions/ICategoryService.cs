@@ -1,5 +1,6 @@
 using BusinessLogic.Common;
 using Contract.Dtos;
+using Contract.Paged;
 using Result = BusinessLogic.Common.ServiceResult;
 
 namespace BusinessLogic.Abstractions;

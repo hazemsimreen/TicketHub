@@ -1,12 +1,9 @@
-using API.Auth;
 using BusinessLogic.Abstractions;
 using BusinessLogic.Common;
 using Contract.Dtos;
-using DataAccess.Context;
-using DataAccess.Models;
+using Contract.Paged;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace WebApplication1.Controllers;
 
@@ -14,376 +11,394 @@ namespace WebApplication1.Controllers;
 [Route("api/[controller]")]
 public class TicketsController : ControllerBase
 {
-    private readonly AppDbContext _db;
     private readonly ITicketService _ticketService;
 
-    public TicketsController(AppDbContext db, ITicketService ticketService)
+    public TicketsController(ITicketService ticketService)
     {
-        _db = db;
         _ticketService = ticketService;
     }
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<TicketResponse>>> GetTickets(
-        [FromQuery] int? statusId,
-        [FromQuery] int? categoryId)
+    // =========================================================
+    // DEBUG AUTH
+    // GET: /api/tickets/debug-auth
+    // =========================================================
+
+    [HttpGet("debug-auth")]
+    [Authorize]
+    public IActionResult DebugAuth()
     {
-        IQueryable<Ticket> query = _db.Tickets.AsNoTracking();
-
-        if (statusId.HasValue)
+        return Ok(new
         {
-            query = query.Where(ticket =>
-                ticket.StatusId == statusId.Value);
-        }
+            IsAuthenticated = User.Identity?.IsAuthenticated,
 
-        if (categoryId.HasValue)
-        {
-            query = query.Where(ticket =>
-                ticket.CategoryId == categoryId.Value);
-        }
+            Name = User.Identity?.Name,
 
-        var tickets = await query
-            .OrderByDescending(ticket => ticket.CreatedAt)
-            .ThenByDescending(ticket => ticket.Id)
-            .Select(ticket => new TicketResponse
+            Claims = User.Claims.Select(c => new
             {
-                Id = ticket.Id,
-                TicketNumber = ticket.TicketNumber,
-                Title = ticket.Title,
-                Description = ticket.Description,
-                SubmittedByUserId = ticket.SubmittedByUserId,
-                CategoryId = ticket.CategoryId,
-                DepartmentId = ticket.DepartmentId,
-                PriorityId = ticket.PriorityId,
-                StatusId = ticket.StatusId,
-                CreatedAt = ticket.CreatedAt,
-                UpdatedAt = ticket.UpdatedAt,
-                ResolvedAt = ticket.ResolvedAt
-            })
-            .ToListAsync();
+                c.Type,
+                c.Value
+            }),
 
-        return Ok(tickets);
+            IsAdmin = User.IsInRole("Admin"),
+
+            IsDepartmentHead = User.IsInRole("DepartmentHead"),
+
+            IsEmployee = User.IsInRole("Employee"),
+
+            IsCitizen = User.IsInRole("Citizen")
+        });
     }
+
+    // =========================================================
+    // GET: /api/tickets
+    // =========================================================
+    //
+    // الوصول الحقيقي والصلاحيات يتم داخل TicketService
+    // =========================================================
+
+    [HttpGet]
+    [Authorize]
+    public async Task<
+        ActionResult<ServiceResult<PagedResult<TicketListItemDto>>>>
+        GetTickets(
+            [FromQuery] TicketQueryDto query,
+            CancellationToken cancellationToken = default)
+    {
+        var result = await _ticketService.ListTicketsAsync(
+            query,
+            cancellationToken);
+
+        return StatusCode(
+            result.StatusCode,
+            result);
+    }
+
+    // =========================================================
+    // GET: /api/tickets/statistics
+    // Staff only
+    // =========================================================
+
+    [HttpGet("statistics")]
+    [Authorize]
+    public async Task<
+        ActionResult<ServiceResult<TicketStatisticsDto>>>
+        GetTicketStatistics(
+            CancellationToken cancellationToken = default)
+    {
+        var result =
+            await _ticketService.GetTicketStatisticsAsync(
+                cancellationToken);
+
+        return StatusCode(
+            result.StatusCode,
+            result);
+    }
+
+    // =========================================================
+    // GET: /api/tickets/{id}
+    // =========================================================
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<TicketResponse>> GetTicketById(Guid id)
+    [Authorize]
+    public async Task<
+        ActionResult<ServiceResult<TicketDetailDto>>>
+        GetTicketById(
+            Guid id,
+            CancellationToken cancellationToken = default)
     {
-        var ticket = await _db.Tickets
-            .AsNoTracking()
-            .Where(ticket => ticket.Id == id)
-            .Select(ticket => new TicketResponse
-            {
-                Id = ticket.Id,
-                TicketNumber = ticket.TicketNumber,
-                Title = ticket.Title,
-                Description = ticket.Description,
-                SubmittedByUserId = ticket.SubmittedByUserId,
-                CategoryId = ticket.CategoryId,
-                DepartmentId = ticket.DepartmentId,
-                PriorityId = ticket.PriorityId,
-                StatusId = ticket.StatusId,
-                CreatedAt = ticket.CreatedAt,
-                UpdatedAt = ticket.UpdatedAt,
-                ResolvedAt = ticket.ResolvedAt
-            })
-            .FirstOrDefaultAsync();
+        var result =
+            await _ticketService.GetTicketByIdAsync(
+                id,
+                cancellationToken);
 
-        if (ticket == null)
-        {
-            return NotFound();
-        }
-
-        return Ok(ticket);
+        return StatusCode(
+            result.StatusCode,
+            result);
     }
+
+    // =========================================================
+    // GET: /api/tickets/{ticketId}/history
+    // =========================================================
+
+    [HttpGet("{ticketId:guid}/history")]
+    [Authorize]
+    public async Task<
+        ActionResult<ServiceResult<PagedResult<TicketHistoryDto>>>>
+        GetTicketHistory(
+            Guid ticketId,
+            [FromQuery] PagedQuery query,
+            CancellationToken cancellationToken = default)
+    {
+        var result =
+            await _ticketService.GetTicketHistoryAsync(
+                ticketId,
+                query,
+                cancellationToken);
+
+        return StatusCode(
+            result.StatusCode,
+            result);
+    }
+
+    // =========================================================
+    // GET: /api/tickets/my
+    // =========================================================
+
+    [HttpGet("my")]
+    [Authorize]
+    public async Task<
+        ActionResult<ServiceResult<PagedResult<TicketListItemDto>>>>
+        GetMyTickets(
+            [FromQuery] TicketQueryDto query,
+            CancellationToken cancellationToken = default)
+    {
+        var result =
+            await _ticketService.GetMyTicketsAsync(
+                query,
+                cancellationToken);
+
+        return StatusCode(
+            result.StatusCode,
+            result);
+    }
+
+    // =========================================================
+    // POST: /api/tickets
+    // =========================================================
 
     [HttpPost]
     [Authorize]
-    public async Task<ActionResult<TicketDetailDto>> CreateTicket(
-       [FromBody] CreateTicketRequest request,
-       CancellationToken cancellationToken)
+    public async Task<
+        ActionResult<ServiceResult<TicketDetailDto>>>
+        CreateTicket(
+            [FromBody] CreateTicketRequest request,
+            CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.Title) ||
             string.IsNullOrWhiteSpace(request.Description))
         {
-            return BadRequest("Title and Description are required.");
+            return BadRequest(
+                "Title and Description are required.");
         }
 
         var dto = new CreateTicketDto
         {
             Title = request.Title.Trim(),
+
             Description = request.Description.Trim(),
+
             CategoryId = request.CategoryId
         };
 
-        var result = await _ticketService.CreateTicketAsync(dto, cancellationToken);
+        var result =
+            await _ticketService.CreateTicketAsync(
+                dto,
+                cancellationToken);
 
         if (!result.IsSuccess)
         {
-            return StatusCode(result.StatusCode, result.ErrorMessage);
+            return StatusCode(
+                result.StatusCode,
+                result);
         }
 
         return CreatedAtAction(
             nameof(GetTicketById),
             new { id = result.Data!.Id },
-            result.Data);
+            result);
     }
 
+    // =========================================================
+    // PUT: /api/tickets/{id}
+    // Staff
+    // =========================================================
+    //
+    // UpdateTicket يتم من خلال TicketService
+    // مع Optimistic Concurrency باستخدام RowVersion
+    // =========================================================
+
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<TicketResponse>> UpdateTicket(
-        Guid id,
-        [FromBody] UpdateTicketRequest request)
+    [Authorize]
+    public async Task<
+        ActionResult<ServiceResult<TicketDetailDto>>>
+        UpdateTicket(
+            Guid id,
+            [FromBody] UpdateTicketRequest request,
+            CancellationToken cancellationToken = default)
     {
-        var ticket = await _db.Tickets
-            .FirstOrDefaultAsync(ticket => ticket.Id == id);
-
-        if (ticket == null)
-        {
-            return NotFound();
-        }
-
         if (string.IsNullOrWhiteSpace(request.Title) ||
             string.IsNullOrWhiteSpace(request.Description))
         {
-            return BadRequest("Title and Description are required.");
+            return BadRequest(
+                "Title and Description are required.");
         }
 
-        var categoryExists = await _db.Categories
-            .AnyAsync(category => category.Id == request.CategoryId);
-
-        if (!categoryExists)
+        var dto = new UpdateTicketDto
         {
-            return BadRequest("Category was not found.");
-        }
+            Title = request.Title.Trim(),
 
-        var departmentExists = await _db.Departments
-            .AnyAsync(department => department.Id == request.DepartmentId);
+            Description = request.Description.Trim(),
 
-        if (!departmentExists)
-        {
-            return BadRequest("Department was not found.");
-        }
+            CategoryId = request.CategoryId,
 
-        var priorityExists = await _db.TicketPriorities
-            .AnyAsync(priority => priority.Id == request.PriorityId);
+            PriorityId = request.PriorityId,
 
-        if (!priorityExists)
-        {
-            return BadRequest("Priority was not found.");
-        }
-
-        ticket.Title = request.Title.Trim();
-        ticket.Description = request.Description.Trim();
-        ticket.CategoryId = request.CategoryId;
-        ticket.DepartmentId = request.DepartmentId;
-        ticket.PriorityId = request.PriorityId;
-        ticket.UpdatedAt = DateTime.UtcNow;
-
-        await _db.SaveChangesAsync();
-
-        return Ok(MapTicket(ticket));
-    }
-
-    [HttpPut("{id:guid}/status")]
-    public async Task<ActionResult<TicketResponse>> UpdateTicketStatus(
-        Guid id,
-        [FromBody] UpdateTicketStatusRequest request)
-    {
-        var ticket = await _db.Tickets
-            .FirstOrDefaultAsync(ticket => ticket.Id == id);
-
-        if (ticket == null)
-        {
-            return NotFound();
-        }
-
-        var status = await _db.TicketStatuses
-            .AsNoTracking()
-            .FirstOrDefaultAsync(status =>
-                status.Id == request.StatusId);
-
-        if (status == null)
-        {
-            return BadRequest("Status was not found.");
-        }
-
-        ticket.StatusId = request.StatusId;
-        ticket.UpdatedAt = DateTime.UtcNow;
-
-        if (status.Code == "Resolved" ||
-            status.Code == "Closed")
-        {
-            ticket.ResolvedAt = DateTime.UtcNow;
-        }
-        else
-        {
-            ticket.ResolvedAt = null;
-        }
-
-        await _db.SaveChangesAsync();
-
-        return Ok(MapTicket(ticket));
-    }
-
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> DeleteTicket(Guid id)
-    {
-        var ticket = await _db.Tickets
-            .FirstOrDefaultAsync(ticket => ticket.Id == id);
-
-        if (ticket == null)
-        {
-            return NotFound();
-        }
-
-        ticket.IsDeleted = true;
-        ticket.UpdatedAt = DateTime.UtcNow;
-
-        await _db.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    [HttpGet("{ticketId:guid}/comments")]
-    public async Task<ActionResult<IEnumerable<CommentResponse>>> GetComments(
-        Guid ticketId)
-    {
-        var ticketExists = await _db.Tickets
-            .AnyAsync(ticket => ticket.Id == ticketId);
-
-        if (!ticketExists)
-        {
-            return NotFound();
-        }
-
-        var comments = await _db.TicketComments
-            .AsNoTracking()
-            .Where(comment => comment.TicketId == ticketId)
-            .OrderByDescending(comment => comment.CreatedAt)
-            .ThenByDescending(comment => comment.Id)
-            .Select(comment => new CommentResponse
-            {
-                Id = comment.Id,
-                TicketId = comment.TicketId,
-                AuthorUserId = comment.AuthorUserId,
-                StepInstanceId = comment.StepInstanceId,
-                ParentCommentId = comment.ParentCommentId,
-                Body = comment.Body,
-                IsInternal = comment.IsInternal,
-                CreatedAt = comment.CreatedAt
-            })
-            .ToListAsync();
-
-        return Ok(comments);
-    }
-
-    [HttpPost("{ticketId:guid}/comments")]
-    public async Task<ActionResult<CommentResponse>> AddComment(
-        Guid ticketId,
-        [FromBody] CreateCommentRequest request)
-    {
-        var ticketExists = await _db.Tickets
-            .AnyAsync(ticket => ticket.Id == ticketId);
-
-        if (!ticketExists)
-        {
-            return NotFound();
-        }
-
-        if (string.IsNullOrWhiteSpace(request.Body))
-        {
-            return BadRequest("Comment body is required.");
-        }
-
-        var authorExists = await _db.Users
-            .AnyAsync(user => user.Id == request.AuthorUserId);
-
-        if (!authorExists)
-        {
-            return BadRequest("Author user was not found.");
-        }
-
-        if (request.ParentCommentId.HasValue)
-        {
-            var parentExists = await _db.TicketComments
-                .AnyAsync(comment =>
-                    comment.Id == request.ParentCommentId.Value &&
-                    comment.TicketId == ticketId);
-
-            if (!parentExists)
-            {
-                return BadRequest(
-                    "Parent comment was not found for this ticket.");
-            }
-        }
-
-        var comment = new TicketComment
-        {
-            TicketId = ticketId,
-            AuthorUserId = request.AuthorUserId,
-            StepInstanceId = request.StepInstanceId,
-            ParentCommentId = request.ParentCommentId,
-            Body = request.Body.Trim(),
-            IsInternal = request.IsInternal,
-            CreatedAt = DateTime.UtcNow
+            RowVersion = request.RowVersion
         };
 
-        _db.TicketComments.Add(comment);
-        await _db.SaveChangesAsync();
-
-        var response = new CommentResponse
-        {
-            Id = comment.Id,
-            TicketId = comment.TicketId,
-            AuthorUserId = comment.AuthorUserId,
-            StepInstanceId = comment.StepInstanceId,
-            ParentCommentId = comment.ParentCommentId,
-            Body = comment.Body,
-            IsInternal = comment.IsInternal,
-            CreatedAt = comment.CreatedAt
-        };
+        var result =
+            await _ticketService.UpdateTicketAsync(
+                id,
+                dto,
+                cancellationToken);
 
         return StatusCode(
-            StatusCodes.Status201Created,
-            response);
+            result.StatusCode,
+            result);
     }
 
-    [HttpGet("categories")]
-    public async Task<ActionResult<IEnumerable<CategorySummaryResponse>>>
-        GetCategories()
-    {
-        var categories = await _db.Categories
-            .AsNoTracking()
-            .OrderBy(category => category.Name)
-            .Select(category => new CategorySummaryResponse
-            {
-                Id = category.Id,
-                CategoryName = category.Name,
-                TicketCount = category.Tickets.Count()
-            })
-            .ToListAsync();
+    // =========================================================
+    // PATCH: /api/tickets/{id}/status
+    // Staff
+    // =========================================================
 
-        return Ok(categories);
-    }
-
-    private static TicketResponse MapTicket(Ticket ticket)
+    [HttpPatch("{id:guid}/status")]
+    [Authorize]
+    public async Task<
+        ActionResult<ServiceResult<TicketDetailDto>>>
+        UpdateTicketStatus(
+            Guid id,
+            [FromBody] UpdateTicketStatusRequest request,
+            CancellationToken cancellationToken = default)
     {
-        return new TicketResponse
+        if (string.IsNullOrWhiteSpace(request.NewStatusCode))
         {
-            Id = ticket.Id,
-            TicketNumber = ticket.TicketNumber,
-            Title = ticket.Title,
-            Description = ticket.Description,
-            SubmittedByUserId = ticket.SubmittedByUserId,
-            CategoryId = ticket.CategoryId,
-            DepartmentId = ticket.DepartmentId,
-            PriorityId = ticket.PriorityId,
-            StatusId = ticket.StatusId,
-            CreatedAt = ticket.CreatedAt,
-            UpdatedAt = ticket.UpdatedAt,
-            ResolvedAt = ticket.ResolvedAt
+            return BadRequest(
+                "NewStatusCode is required.");
+        }
+
+        var dto = new UpdateTicketStatusDto
+        {
+            NewStatusCode = request.NewStatusCode.Trim(),
+
+            Reason = string.IsNullOrWhiteSpace(request.Reason)
+                ? null
+                : request.Reason.Trim()
         };
+
+        var result =
+            await _ticketService.UpdateTicketStatusAsync(
+                id,
+                dto,
+                cancellationToken);
+
+        return StatusCode(
+            result.StatusCode,
+            result);
+    }
+
+    // =========================================================
+    // PATCH: /api/tickets/{id}/assign
+    // Admin, DepartmentHead
+    // =========================================================
+
+    [HttpPatch("{id:guid}/assign")]
+    [Authorize]
+    public async Task<
+        ActionResult<ServiceResult<TicketDetailDto>>>
+        AssignTicket(
+            Guid id,
+            [FromBody] AssignTicketRequest request,
+            CancellationToken cancellationToken = default)
+    {
+        var dto = new AssignTicketDto
+        {
+            AssignedToUserId = request.AssignedToUserId
+        };
+
+        var result =
+            await _ticketService.AssignTicketAsync(
+                id,
+                dto,
+                cancellationToken);
+
+        return StatusCode(
+            result.StatusCode,
+            result);
+    }
+
+    // =========================================================
+    // POST: /api/tickets/{id}/auto-assign
+    // Admin, DepartmentHead
+    // =========================================================
+
+    [HttpPost("{id:guid}/auto-assign")]
+    [Authorize]
+    public async Task<
+        ActionResult<ServiceResult<TicketDetailDto>>>
+        AutoAssignTicket(
+            Guid id,
+            CancellationToken cancellationToken = default)
+    {
+        var result =
+            await _ticketService.AutoAssignTicketAsync(
+                id,
+                cancellationToken);
+
+        return StatusCode(
+            result.StatusCode,
+            result);
+    }
+
+    // =========================================================
+    // POST: /api/tickets/{id}/reopen
+    // Reporter, Staff
+    // =========================================================
+
+    [HttpPost("{id:guid}/reopen")]
+    [Authorize]
+    public async Task<
+        ActionResult<ServiceResult<TicketDetailDto>>>
+        ReopenTicket(
+            Guid id,
+            CancellationToken cancellationToken = default)
+    {
+        var result =
+            await _ticketService.ReopenTicketAsync(
+                id,
+                cancellationToken);
+
+        return StatusCode(
+            result.StatusCode,
+            result);
+    }
+
+    // =========================================================
+    // DELETE: /api/tickets/{id}
+    // Admin only
+    // =========================================================
+
+    [HttpDelete("{id:guid}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteTicket(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var result =
+            await _ticketService.DeleteTicketAsync(
+                id,
+                cancellationToken);
+
+        return StatusCode(
+            result.StatusCode,
+            result);
     }
 }
+
+
+// =============================================================
+// Request Models
+// =============================================================
 
 public class CreateTicketRequest
 {
@@ -394,6 +409,7 @@ public class CreateTicketRequest
     public int CategoryId { get; set; }
 }
 
+
 public class UpdateTicketRequest
 {
     public string Title { get; set; } = string.Empty;
@@ -402,15 +418,25 @@ public class UpdateTicketRequest
 
     public int CategoryId { get; set; }
 
-    public int DepartmentId { get; set; }
-
     public int PriorityId { get; set; }
+
+    public string RowVersion { get; set; } = string.Empty;
 }
+
 
 public class UpdateTicketStatusRequest
 {
-    public int StatusId { get; set; }
+    public string NewStatusCode { get; set; } = string.Empty;
+
+    public string? Reason { get; set; }
 }
+
+
+public class AssignTicketRequest
+{
+    public Guid? AssignedToUserId { get; set; }
+}
+
 
 public class CreateCommentRequest
 {
@@ -424,6 +450,11 @@ public class CreateCommentRequest
 
     public bool IsInternal { get; set; }
 }
+
+
+// =============================================================
+// Response Models
+// =============================================================
 
 public class TicketResponse
 {
@@ -452,6 +483,7 @@ public class TicketResponse
     public DateTime? ResolvedAt { get; set; }
 }
 
+
 public class CommentResponse
 {
     public Guid Id { get; set; }
@@ -470,6 +502,7 @@ public class CommentResponse
 
     public DateTime CreatedAt { get; set; }
 }
+
 
 public class CategorySummaryResponse
 {

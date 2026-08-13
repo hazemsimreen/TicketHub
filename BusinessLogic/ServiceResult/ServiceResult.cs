@@ -73,7 +73,7 @@ namespace BusinessLogic.Common
         public static ServiceResult Conflict(string message)
         {
             return new ServiceResult(
-                false,
+false,
                 409,
                 message);
         }
