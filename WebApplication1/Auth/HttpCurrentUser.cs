@@ -40,6 +40,12 @@ public class HttpCurrentUser : ICurrentUser
             Principal?.FindFirstValue("dept"), out var id)
                 ? id : null;
 
+    public int? PrimaryDepartmentId =>
+        int.TryParse(
+            Principal?.FindFirstValue(AppClaimTypes.DepartmentId)
+            ?? Principal?.FindFirstValue("dept"), out var departmentId)
+                ? departmentId : null;
+
     public IReadOnlyList<string> Roles =>
         Principal?.Claims
         .Where(c => c.Type == ClaimTypes.Role

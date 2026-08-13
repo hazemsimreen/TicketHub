@@ -8,6 +8,6 @@ public interface ICurrentUser
     bool IsAuthenticated { get; }
     IReadOnlyList<string> Roles { get; }
     Guid? DepartmentId { get; }
-    Guid? PrimaryDepartmentId => DepartmentId;
+    int? PrimaryDepartmentId { get; }
     bool IsInRole(string roleCode);
 }
