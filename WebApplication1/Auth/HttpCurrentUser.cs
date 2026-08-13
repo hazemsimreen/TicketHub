@@ -6,7 +6,12 @@ using Microsoft.AspNetCore.Http;
 namespace API.Auth;
 
 /// <summary>
-/// Reads the current user's identity and roles from HttpContext JWT claims.
+/// Reads the current user's identity and roles from the JWT claims
+/// stored in HttpContext.User by the JwtBearerHandler.
+/// 
+/// Note: ASP.NET Core's JsonWebTokenHandler (default in .NET 8+) maps the JWT
+/// "sub" claim → ClaimTypes.NameIdentifier regardless of DefaultInboundClaimTypeMap.
+/// So we always read NameIdentifier first as the canonical user ID source.
 /// </summary>
 public class HttpCurrentUser : ICurrentUser
 {
@@ -15,24 +20,24 @@ public class HttpCurrentUser : ICurrentUser
 
     private ClaimsPrincipal? Principal => _http.HttpContext?.User;
 
+    // "sub" gets mapped to ClaimTypes.NameIdentifier by JsonWebTokenHandler.
     public string? UserId =>
-        Principal?.FindFirstValue(AppClaimTypes.UserId)
-        ?? Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+        Principal?.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? Principal?.FindFirstValue("sub");
 
     public string? UserName =>
-        Principal?.FindFirstValue(AppClaimTypes.Name)
+        Principal?.FindFirstValue("name")
         ?? Principal?.FindFirstValue(ClaimTypes.Name);
 
     public string? Email =>
-        Principal?.FindFirstValue(AppClaimTypes.Email)
+        Principal?.FindFirstValue("email")
         ?? Principal?.FindFirstValue(ClaimTypes.Email);
 
     public bool IsAuthenticated => Principal?.Identity?.IsAuthenticated ?? false;
 
     public Guid? DepartmentId =>
         Guid.TryParse(
-            Principal?.FindFirstValue(AppClaimTypes.DepartmentId)
-            ?? Principal?.FindFirstValue("dept"), out var id)
+            Principal?.FindFirstValue("dept"), out var id)
                 ? id : null;
 
     public int? PrimaryDepartmentId =>
@@ -42,8 +47,11 @@ public class HttpCurrentUser : ICurrentUser
                 ? departmentId : null;
 
     public IReadOnlyList<string> Roles =>
-        Principal?.FindAll(AppClaimTypes.Role).Select(c => c.Value)
-        .Concat(Principal?.FindAll(ClaimTypes.Role).Select(c => c.Value) ?? [])
+        Principal?.Claims
+        .Where(c => c.Type == ClaimTypes.Role
+                 || c.Type == AppClaimTypes.Role   // "role"
+                 || c.Type.EndsWith("/role", StringComparison.OrdinalIgnoreCase))
+        .Select(c => c.Value)
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToList()
         ?? (IReadOnlyList<string>)[];

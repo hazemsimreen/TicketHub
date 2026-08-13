@@ -192,9 +192,12 @@ public class AuthService : IAuthService
     public async Task<ServiceResult<MeResponse>> GetMeAsync(
         string userId, CancellationToken ct = default)
     {
+        if (!Guid.TryParse(userId, out var uid))
+            return ServiceResult<MeResponse>.BadRequest("Invalid user id.");
+
         var user = await _db.Set<User>()
             .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Id.ToString() == userId && !u.IsDeleted, ct);
+            .FirstOrDefaultAsync(u => u.Id == uid && !u.IsDeleted, ct);
 
         if (user is null) return ServiceResult<MeResponse>.NotFound("User not found.");
 
@@ -258,7 +261,13 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(req.Email);
         if (user is null) return ServiceResult.BadRequest("Invalid request.");
 
-        var result = await _userManager.ResetPasswordAsync(user, req.Token, req.NewPassword);
+        var token = req.Token.Contains('%') ? Uri.UnescapeDataString(req.Token) : req.Token;
+        var result = await _userManager.ResetPasswordAsync(user, token, req.NewPassword);
+        if (!result.Succeeded && token != req.Token)
+        {
+            result = await _userManager.ResetPasswordAsync(user, req.Token, req.NewPassword);
+        }
+
         if (!result.Succeeded)
             return ServiceResult.BadRequest(
                 string.Join(" ", result.Errors.Select(e => e.Description)));
@@ -276,7 +285,13 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(req.Email);
         if (user is null) return ServiceResult.BadRequest("Invalid request.");
 
-        var result = await _userManager.ConfirmEmailAsync(user, req.Token);
+        var token = req.Token.Contains('%') ? Uri.UnescapeDataString(req.Token) : req.Token;
+        var result = await _userManager.ConfirmEmailAsync(user, token);
+        if (!result.Succeeded && token != req.Token)
+        {
+            result = await _userManager.ConfirmEmailAsync(user, req.Token);
+        }
+
         if (!result.Succeeded)
             return ServiceResult.BadRequest(
                 string.Join(" ", result.Errors.Select(e => e.Description)));
