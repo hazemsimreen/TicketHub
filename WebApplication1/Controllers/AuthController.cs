@@ -20,7 +20,7 @@ public class AuthController : ControllerBase
     public AuthController(IAuthService auth, ICurrentUser me)
     {
         _auth = auth;
-        _me   = me;
+        _me = me;
     }
 
     // ── Register ──────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ public class AuthController : ControllerBase
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
         var ua = Request.Headers.UserAgent.ToString();
-        var r  = await _auth.LoginAsync(req, ip, ua, ct);
+        var r = await _auth.LoginAsync(req, ip, ua, ct);
         return r.IsSuccess ? Ok(r.Data) : Problem(r.ErrorMessage, statusCode: r.StatusCode);
     }
 
@@ -50,7 +50,7 @@ public class AuthController : ControllerBase
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
         var ua = Request.Headers.UserAgent.ToString();
-        var r  = await _auth.RefreshAsync(req.RefreshToken, ip, ua, ct);
+        var r = await _auth.RefreshAsync(req.RefreshToken, ip, ua, ct);
         return r.IsSuccess ? Ok(r.Data) : Problem(r.ErrorMessage, statusCode: r.StatusCode);
     }
 

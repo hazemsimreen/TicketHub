@@ -26,8 +26,10 @@ public class AppDbContext
     public DbSet<Skill> Skills => Set<Skill>();
 
     public DbSet<Conversation> Conversations => Set<Conversation>();
+
     public DbSet<ConversationParticipant> ConversationParticipants =>
         Set<ConversationParticipant>();
+
     public DbSet<ConversationMessage> ConversationMessages =>
         Set<ConversationMessage>();
 
@@ -59,49 +61,73 @@ public class AppDbContext
     public DbSet<NotificationType> NotificationTypes =>
         Set<NotificationType>();
 
-    public DbSet<Notification>  Notifications  => Set<Notification>();
-    public DbSet<RefreshToken>  RefreshTokens  => Set<RefreshToken>();
+    public DbSet<Notification> Notifications =>
+        Set<Notification>();
 
-    // ── Automatic Audit Stamping + Soft Delete ────────────────────────────────
-    public override Task<int> SaveChangesAsync(CancellationToken ct = default)
+    public DbSet<RefreshToken> RefreshTokens =>
+        Set<RefreshToken>();
+
+
+    // =========================================================
+    // Automatic Audit Stamping + Soft Delete
+    // =========================================================
+
+    public override Task<int> SaveChangesAsync(
+        CancellationToken ct = default)
     {
         ApplyAuditRules();
+
         return base.SaveChangesAsync(ct);
     }
 
     public override int SaveChanges()
     {
         ApplyAuditRules();
+
         return base.SaveChanges();
     }
 
     private void ApplyAuditRules()
     {
         var now = DateTime.UtcNow;
+
         foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
         {
             switch (entry.State)
             {
                 case EntityState.Added:
+
                     entry.Entity.CreatedAt = now;
                     entry.Entity.IsDeleted = false;
+
                     break;
+
+
                 case EntityState.Modified:
+
                     entry.Entity.UpdatedAt = now;
+
                     break;
+
+
                 case EntityState.Deleted:
+
                     // Convert hard-delete → soft-delete
-                    entry.State             = EntityState.Modified;
-                    entry.Entity.IsDeleted  = true;
-                    entry.Entity.DeletedAt  = now;
+                    entry.State = EntityState.Modified;
+
+                    entry.Entity.IsDeleted = true;
+                    entry.Entity.DeletedAt = now;
+
                     break;
             }
         }
     }
 
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
 
         // =========================================================
         // Identity User
@@ -125,6 +151,7 @@ public class AppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+
         // =========================================================
         // Department
         // =========================================================
@@ -144,11 +171,44 @@ public class AppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasData(
-                new Department { Id = 1, Code = "ROADS",      Name = "Roads & Infrastructure", CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new Department { Id = 2, Code = "SANITATION", Name = "Sanitation",               CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new Department { Id = 3, Code = "LIGHTING",   Name = "Street Lighting",          CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+                new Department
+                {
+                    Id = 1,
+                    Code = "ROADS",
+                    Name = "Roads & Infrastructure",
+                    ParentDepartmentId = null,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new Department
+                {
+                    Id = 2,
+                    Code = "SANITATION",
+                    Name = "Sanitation",
+                    ParentDepartmentId = null,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new Department
+                {
+                    Id = 3,
+                    Code = "LIGHTING",
+                    Name = "Street Lighting",
+                    ParentDepartmentId = null,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                }
             );
         });
+
 
         // =========================================================
         // Role
@@ -164,12 +224,54 @@ public class AppDbContext
                 .IsUnique();
 
             entity.HasData(
-                new Role { Id = 1, Code = "Admin",          IsDepartmentScoped = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new Role { Id = 2, Code = "Supervisor", IsDepartmentScoped = true,  CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new Role { Id = 3, Code = "Agent",       IsDepartmentScoped = true,  CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new Role { Id = 4, Code = "Citizen",        IsDepartmentScoped = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+
+                new Role
+                {
+                    Id = 1,
+                    Code = "Admin",
+                    IsDepartmentScoped = false,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new Role
+                {
+                    Id = 2,
+                    Code = "DepartmentHead",
+                    IsDepartmentScoped = true,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new Role
+                {
+                    Id = 3,
+                    Code = "Employee",
+                    IsDepartmentScoped = true,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new Role
+                {
+                    Id = 4,
+                    Code = "Citizen",
+                    IsDepartmentScoped = false,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                }
+
             );
         });
+
 
         // =========================================================
         // UserRole
@@ -205,6 +307,7 @@ public class AppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+
         // =========================================================
         // TicketPriority
         // =========================================================
@@ -219,12 +322,52 @@ public class AppDbContext
                 .IsUnique();
 
             entity.HasData(
-                new TicketPriority { Id = 1, Code = "Low",    SortOrder = 1, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new TicketPriority { Id = 2, Code = "Medium", SortOrder = 2, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new TicketPriority { Id = 3, Code = "High",   SortOrder = 3, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new TicketPriority { Id = 4, Code = "Urgent", SortOrder = 4, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+                new TicketPriority
+                {
+                    Id = 1,
+                    Code = "Low",
+                    SortOrder = 1,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new TicketPriority
+                {
+                    Id = 2,
+                    Code = "Medium",
+                    SortOrder = 2,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new TicketPriority
+                {
+                    Id = 3,
+                    Code = "High",
+                    SortOrder = 3,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new TicketPriority
+                {
+                    Id = 4,
+                    Code = "Urgent",
+                    SortOrder = 4,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                }
             );
         });
+
 
         // =========================================================
         // TicketStatus
@@ -240,14 +383,74 @@ public class AppDbContext
                 .IsUnique();
 
             entity.HasData(
-                new TicketStatus { Id = 1, Code = "Open",       IsTerminal = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new TicketStatus { Id = 2, Code = "InProgress",  IsTerminal = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new TicketStatus { Id = 3, Code = "OnHold",      IsTerminal = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new TicketStatus { Id = 4, Code = "Resolved",    IsTerminal = false, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new TicketStatus { Id = 5, Code = "Closed",      IsTerminal = true,  CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new TicketStatus { Id = 6, Code = "Cancelled",   IsTerminal = true,  CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+                new TicketStatus
+                {
+                    Id = 1,
+                    Code = "Open",
+                    IsTerminal = false,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new TicketStatus
+                {
+                    Id = 2,
+                    Code = "InProgress",
+                    IsTerminal = false,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new TicketStatus
+                {
+                    Id = 3,
+                    Code = "OnHold",
+                    IsTerminal = false,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new TicketStatus
+                {
+                    Id = 4,
+                    Code = "Resolved",
+                    IsTerminal = false,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new TicketStatus
+                {
+                    Id = 5,
+                    Code = "Closed",
+                    IsTerminal = true,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new TicketStatus
+                {
+                    Id = 6,
+                    Code = "Cancelled",
+                    IsTerminal = true,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                }
             );
         });
+
 
         // =========================================================
         // Category
@@ -273,12 +476,56 @@ public class AppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasData(
-                new Category { Id = 1, Name = "Pothole",             DepartmentId = 1, DefaultPriorityId = 3, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new Category { Id = 2, Name = "Broken Street Light", DepartmentId = 3, DefaultPriorityId = 2, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new Category { Id = 3, Name = "Uncollected Bins",    DepartmentId = 2, DefaultPriorityId = 2, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new Category { Id = 4, Name = "Water Leak",          DepartmentId = 1, DefaultPriorityId = 4, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+                new Category
+                {
+                    Id = 1,
+                    Name = "Pothole",
+                    DepartmentId = 1,
+                    DefaultPriorityId = 3,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new Category
+                {
+                    Id = 2,
+                    Name = "Broken Street Light",
+                    DepartmentId = 3,
+                    DefaultPriorityId = 2,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new Category
+                {
+                    Id = 3,
+                    Name = "Uncollected Bins",
+                    DepartmentId = 2,
+                    DefaultPriorityId = 2,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new Category
+                {
+                    Id = 4,
+                    Name = "Water Leak",
+                    DepartmentId = 1,
+                    DefaultPriorityId = 4,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                }
             );
         });
+
 
         // =========================================================
         // Ticket
@@ -326,6 +573,7 @@ public class AppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+
         // =========================================================
         // Conversation
         // =========================================================
@@ -344,6 +592,7 @@ public class AppDbContext
                 .HasForeignKey<Conversation>(x => x.TicketId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
 
         // =========================================================
         // ConversationParticipant
@@ -373,6 +622,7 @@ public class AppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+
         // =========================================================
         // ConversationMessage
         // =========================================================
@@ -393,6 +643,7 @@ public class AppDbContext
                 .HasForeignKey(x => x.SenderUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
 
         // =========================================================
         // TicketComment
@@ -425,6 +676,7 @@ public class AppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+
         // =========================================================
         // Attachment
         // =========================================================
@@ -450,6 +702,7 @@ public class AppDbContext
                 .HasForeignKey(x => x.MessageId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
 
         // =========================================================
         // TicketWatcher
@@ -478,6 +731,7 @@ public class AppDbContext
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
 
         // =========================================================
         // TicketStatusHistory
@@ -510,6 +764,7 @@ public class AppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+
         // =========================================================
         // TicketFieldHistory
         // =========================================================
@@ -531,6 +786,7 @@ public class AppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+
         // =========================================================
         // WorkflowDefinition
         // =========================================================
@@ -550,7 +806,61 @@ public class AppDbContext
                 .WithMany(x => x.WorkflowDefinitions)
                 .HasForeignKey(x => x.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // =====================================================
+            // Seed Data
+            //
+            // قالب افتراضي واحد (IsDefault = true) لكل قسم موجود
+            // حالياً (Roads / Sanitation / Lighting)، بدون فئة محددة
+            // (CategoryId = null) — أي ينطبق على كل تذاكر القسم
+            // بغض النظر عن الفئة.
+            // =====================================================
+
+            entity.HasData(
+                new WorkflowDefinition
+                {
+                    Id = Guid.Parse("11111111-0000-0000-0000-000000000001"),
+                    Name = "Default Workflow - Roads & Infrastructure",
+                    DepartmentId = 1,
+                    CategoryId = null,
+                    Version = 1,
+                    IsDefault = true,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new WorkflowDefinition
+                {
+                    Id = Guid.Parse("11111111-0000-0000-0000-000000000002"),
+                    Name = "Default Workflow - Sanitation",
+                    DepartmentId = 2,
+                    CategoryId = null,
+                    Version = 1,
+                    IsDefault = true,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new WorkflowDefinition
+                {
+                    Id = Guid.Parse("11111111-0000-0000-0000-000000000003"),
+                    Name = "Default Workflow - Street Lighting",
+                    DepartmentId = 3,
+                    CategoryId = null,
+                    Version = 1,
+                    IsDefault = true,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                }
+            );
         });
+
 
         // =========================================================
         // WorkflowStep
@@ -576,7 +886,112 @@ public class AppDbContext
                 .WithMany(x => x.AssignedWorkflowSteps)
                 .HasForeignKey(x => x.AssignedUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // =====================================================
+            // Seed Data
+            //
+            // خطوتين لكل قالب افتراضي:
+            //   1) DepartmentHead review  (RoleId = 2)
+            //   2) Employee execution     (RoleId = 3)
+            //
+            // نفس نمط التصعيد المستخدم فعلياً بـ
+            // TicketService.AssignTicketAsync (موظف من نفس القسم).
+            // =====================================================
+
+            entity.HasData(
+
+                // ---------------------------------------------------
+                // Roads & Infrastructure workflow steps
+                // ---------------------------------------------------
+
+                new WorkflowStep
+                {
+                    Id = Guid.Parse("21111111-0000-0000-0000-000000000001"),
+                    WorkflowDefinitionId = Guid.Parse("11111111-0000-0000-0000-000000000001"),
+                    StepOrder = 1,
+                    RoleId = 2, // DepartmentHead
+                    AssignedUserId = null,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new WorkflowStep
+                {
+                    Id = Guid.Parse("21111111-0000-0000-0000-000000000002"),
+                    WorkflowDefinitionId = Guid.Parse("11111111-0000-0000-0000-000000000001"),
+                    StepOrder = 2,
+                    RoleId = 3, // Employee
+                    AssignedUserId = null,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                // ---------------------------------------------------
+                // Sanitation workflow steps
+                // ---------------------------------------------------
+
+                new WorkflowStep
+                {
+                    Id = Guid.Parse("22222222-0000-0000-0000-000000000001"),
+                    WorkflowDefinitionId = Guid.Parse("11111111-0000-0000-0000-000000000002"),
+                    StepOrder = 1,
+                    RoleId = 2, // DepartmentHead
+                    AssignedUserId = null,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new WorkflowStep
+                {
+                    Id = Guid.Parse("22222222-0000-0000-0000-000000000002"),
+                    WorkflowDefinitionId = Guid.Parse("11111111-0000-0000-0000-000000000002"),
+                    StepOrder = 2,
+                    RoleId = 3, // Employee
+                    AssignedUserId = null,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                // ---------------------------------------------------
+                // Street Lighting workflow steps
+                // ---------------------------------------------------
+
+                new WorkflowStep
+                {
+                    Id = Guid.Parse("23333333-0000-0000-0000-000000000001"),
+                    WorkflowDefinitionId = Guid.Parse("11111111-0000-0000-0000-000000000003"),
+                    StepOrder = 1,
+                    RoleId = 2, // DepartmentHead
+                    AssignedUserId = null,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new WorkflowStep
+                {
+                    Id = Guid.Parse("23333333-0000-0000-0000-000000000002"),
+                    WorkflowDefinitionId = Guid.Parse("11111111-0000-0000-0000-000000000003"),
+                    StepOrder = 2,
+                    RoleId = 3, // Employee
+                    AssignedUserId = null,
+                    CreatedAt = new DateTime(
+                        2026, 1, 1, 0, 0, 0,
+                        DateTimeKind.Utc),
+                    IsDeleted = false
+                }
+            );
         });
+
 
         // =========================================================
         // WorkflowInstance
@@ -598,6 +1013,7 @@ public class AppDbContext
                 .HasForeignKey(x => x.WorkflowDefinitionId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
 
         // =========================================================
         // WorkflowStepInstance
@@ -624,6 +1040,7 @@ public class AppDbContext
                 .HasForeignKey(x => x.AssignedToUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
 
         // =========================================================
         // TicketTransfer
@@ -661,6 +1078,7 @@ public class AppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+
         // =========================================================
         // NotificationType
         // =========================================================
@@ -673,7 +1091,45 @@ public class AppDbContext
 
             entity.HasIndex(x => x.Code)
                 .IsUnique();
+
+
+            entity.HasData(new NotificationType
+            {
+                Id = Guid.Parse("a1111111-1111-1111-1111-111111111111"),
+                Code = "TicketStatusChanged",
+                TitleTemplate = "Your ticket {TicketNumber} status changed to {NewStatus}",
+                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                IsDeleted = false
+            },
+
+                new NotificationType
+                {
+                    Id = Guid.Parse("a2222222-2222-2222-2222-222222222222"),
+                    Code = "TicketAssigned",
+                    TitleTemplate = "Your ticket {TicketNumber} was assigned to {AgentName}",
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new NotificationType
+                {
+                    Id = Guid.Parse("a3333333-3333-3333-3333-333333333333"),
+                    Code = "TicketCommentAdded",
+                    TitleTemplate = "A new comment was added to your ticket {TicketNumber}",
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    IsDeleted = false
+                },
+
+                new NotificationType
+                {
+                    Id = Guid.Parse("a4444444-4444-4444-4444-444444444444"),
+                    Code = "TicketTransferred",
+                    TitleTemplate = "Your ticket {TicketNumber} was transferred to {Department}",
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    IsDeleted = false
+                });
         });
+
 
         // =========================================================
         // Notification
@@ -701,17 +1157,27 @@ public class AppDbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // ── RefreshTokens ─────────────────────────────────────────────────────
+
+        // =========================================================
+        // RefreshTokens
+        // =========================================================
+
         modelBuilder.Entity<RefreshToken>(entity =>
         {
             entity.ToTable("RefreshTokens");
+
             entity.HasKey(x => x.Id);
-            entity.HasIndex(x => x.TokenHash).IsUnique();
+
+            entity.HasIndex(x => x.TokenHash)
+                .IsUnique();
+
             entity.HasOne(x => x.User)
-                  .WithMany()
-                  .HasForeignKey(x => x.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
         modelBuilder.ApplyOrganisationStaffCore();
     }
+
 }
+

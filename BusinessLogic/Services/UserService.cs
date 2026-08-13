@@ -5,6 +5,7 @@ using DataAccess.Context;
 using DataAccess.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Contract.Paged;
 using Result = BusinessLogic.Common.ServiceResult;
 
 namespace BusinessLogic.Services;

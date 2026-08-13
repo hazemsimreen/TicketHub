@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BusinessLogic.Common
+namespace Contract.Paged
 {
     public class PagedResult<T>
     {

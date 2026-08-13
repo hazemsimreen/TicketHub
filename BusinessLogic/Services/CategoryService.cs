@@ -5,6 +5,7 @@ using Contract.Dtos;
 using DataAccess.Models;
 using Microsoft.EntityFrameworkCore;
 using TicketHub.DataAccess.Repositories;
+using Contract.Paged;
 using Result = BusinessLogic.Common.ServiceResult;
 
 namespace BusinessLogic.Services;

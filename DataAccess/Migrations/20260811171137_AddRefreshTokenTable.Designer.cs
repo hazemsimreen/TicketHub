@@ -4,6 +4,7 @@ using DataAccess.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260811171137_AddRefreshTokenTable")]
+    partial class AddRefreshTokenTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,111 +24,6 @@ namespace DataAccess.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("AgentSkill", b =>
-                {
-                    b.Property<int>("AgentsId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SkillsId")
-                        .HasColumnType("int");
-
-                    b.HasKey("AgentsId", "SkillsId");
-
-                    b.HasIndex("SkillsId");
-
-                    b.ToTable("AgentSkills", (string)null);
-                });
-
-            modelBuilder.Entity("DataAccess.Models.Agent", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("DepartmentId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DepartmentId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique()
-                        .HasFilter("[IsDeleted] = 0");
-
-                    b.ToTable("Agents", (string)null);
-                });
-
-            modelBuilder.Entity("DataAccess.Models.AgentProfile", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AgentId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("MaxOpenTickets")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AgentId")
-                        .IsUnique()
-                        .HasFilter("[IsDeleted] = 0");
-
-                    b.ToTable("AgentProfiles", (string)null);
-                });
 
             modelBuilder.Entity("DataAccess.Models.Attachment", b =>
                 {
@@ -204,11 +102,6 @@ namespace DataAccess.Migrations
                     b.Property<int>("DepartmentId")
                         .HasColumnType("int");
 
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -226,11 +119,10 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("DefaultPriorityId");
 
-                    b.HasIndex("Name");
+                    b.HasIndex("DepartmentId");
 
-                    b.HasIndex("DepartmentId", "Name")
-                        .IsUnique()
-                        .HasFilter("[IsDeleted] = 0");
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("Categories", (string)null);
 
@@ -241,7 +133,6 @@ namespace DataAccess.Migrations
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DefaultPriorityId = 3,
                             DepartmentId = 1,
-                            IsActive = true,
                             IsDeleted = false,
                             Name = "Pothole"
                         },
@@ -251,7 +142,6 @@ namespace DataAccess.Migrations
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DefaultPriorityId = 2,
                             DepartmentId = 3,
-                            IsActive = true,
                             IsDeleted = false,
                             Name = "Broken Street Light"
                         },
@@ -261,7 +151,6 @@ namespace DataAccess.Migrations
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DefaultPriorityId = 2,
                             DepartmentId = 2,
-                            IsActive = true,
                             IsDeleted = false,
                             Name = "Uncollected Bins"
                         },
@@ -271,7 +160,6 @@ namespace DataAccess.Migrations
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DefaultPriorityId = 4,
                             DepartmentId = 1,
-                            IsActive = true,
                             IsDeleted = false,
                             Name = "Water Leak"
                         });
@@ -439,7 +327,7 @@ namespace DataAccess.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("ParentDepartmentId")
                         .HasColumnType("int");
@@ -453,12 +341,7 @@ namespace DataAccess.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
-                        .IsUnique()
-                        .HasFilter("[IsDeleted] = 0");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasFilter("[IsDeleted] = 0");
+                        .IsUnique();
 
                     b.HasIndex("ParentDepartmentId");
 
@@ -582,40 +465,6 @@ namespace DataAccess.Migrations
                         .IsUnique();
 
                     b.ToTable("NotificationTypes", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("a1111111-1111-1111-1111-111111111111"),
-                            Code = "TicketStatusChanged",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            TitleTemplate = "Your ticket {TicketNumber} status changed to {NewStatus}"
-                        },
-                        new
-                        {
-                            Id = new Guid("a2222222-2222-2222-2222-222222222222"),
-                            Code = "TicketAssigned",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            TitleTemplate = "Your ticket {TicketNumber} was assigned to {AgentName}"
-                        },
-                        new
-                        {
-                            Id = new Guid("a3333333-3333-3333-3333-333333333333"),
-                            Code = "TicketCommentAdded",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            TitleTemplate = "A new comment was added to your ticket {TicketNumber}"
-                        },
-                        new
-                        {
-                            Id = new Guid("a4444444-4444-4444-4444-444444444444"),
-                            Code = "TicketTransferred",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            TitleTemplate = "Your ticket {TicketNumber} was transferred to {Department}"
-                        });
                 });
 
             modelBuilder.Entity("DataAccess.Models.RefreshToken", b =>
@@ -723,7 +572,7 @@ namespace DataAccess.Migrations
                         new
                         {
                             Id = 2,
-                            Code = "Supervisor",
+                            Code = "DepartmentHead",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsDepartmentScoped = true
@@ -731,7 +580,7 @@ namespace DataAccess.Migrations
                         new
                         {
                             Id = 3,
-                            Code = "Agent",
+                            Code = "Employee",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
                             IsDepartmentScoped = true
@@ -744,49 +593,6 @@ namespace DataAccess.Migrations
                             IsDeleted = false,
                             IsDepartmentScoped = false
                         });
-                });
-
-            modelBuilder.Entity("DataAccess.Models.Skill", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasFilter("[IsDeleted] = 0");
-
-                    b.ToTable("Skills", (string)null);
                 });
 
             modelBuilder.Entity("DataAccess.Models.Ticket", b =>
@@ -1343,11 +1149,6 @@ namespace DataAccess.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -1462,7 +1263,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("UserId", "RoleId", "DepartmentId")
                         .IsUnique()
-                        .HasFilter("[IsDeleted] = 0");
+                        .HasFilter("[DepartmentId] IS NOT NULL");
 
                     b.ToTable("UserRoles", (string)null);
                 });
@@ -1517,38 +1318,6 @@ namespace DataAccess.Migrations
                     b.HasIndex("DepartmentId");
 
                     b.ToTable("WorkflowDefinitions", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("11111111-0000-0000-0000-000000000001"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DepartmentId = 1,
-                            IsDefault = true,
-                            IsDeleted = false,
-                            Name = "Default Workflow - Roads & Infrastructure",
-                            Version = 1
-                        },
-                        new
-                        {
-                            Id = new Guid("11111111-0000-0000-0000-000000000002"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DepartmentId = 2,
-                            IsDefault = true,
-                            IsDeleted = false,
-                            Name = "Default Workflow - Sanitation",
-                            Version = 1
-                        },
-                        new
-                        {
-                            Id = new Guid("11111111-0000-0000-0000-000000000003"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DepartmentId = 3,
-                            IsDefault = true,
-                            IsDeleted = false,
-                            Name = "Default Workflow - Street Lighting",
-                            Version = 1
-                        });
                 });
 
             modelBuilder.Entity("DataAccess.Models.WorkflowInstance", b =>
@@ -1645,62 +1414,6 @@ namespace DataAccess.Migrations
                     b.HasIndex("WorkflowDefinitionId");
 
                     b.ToTable("WorkflowSteps", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("21111111-0000-0000-0000-000000000001"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            RoleId = 2,
-                            StepOrder = 1,
-                            WorkflowDefinitionId = new Guid("11111111-0000-0000-0000-000000000001")
-                        },
-                        new
-                        {
-                            Id = new Guid("21111111-0000-0000-0000-000000000002"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            RoleId = 3,
-                            StepOrder = 2,
-                            WorkflowDefinitionId = new Guid("11111111-0000-0000-0000-000000000001")
-                        },
-                        new
-                        {
-                            Id = new Guid("22222222-0000-0000-0000-000000000001"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            RoleId = 2,
-                            StepOrder = 1,
-                            WorkflowDefinitionId = new Guid("11111111-0000-0000-0000-000000000002")
-                        },
-                        new
-                        {
-                            Id = new Guid("22222222-0000-0000-0000-000000000002"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            RoleId = 3,
-                            StepOrder = 2,
-                            WorkflowDefinitionId = new Guid("11111111-0000-0000-0000-000000000002")
-                        },
-                        new
-                        {
-                            Id = new Guid("23333333-0000-0000-0000-000000000001"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            RoleId = 2,
-                            StepOrder = 1,
-                            WorkflowDefinitionId = new Guid("11111111-0000-0000-0000-000000000003")
-                        },
-                        new
-                        {
-                            Id = new Guid("23333333-0000-0000-0000-000000000002"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsDeleted = false,
-                            RoleId = 3,
-                            StepOrder = 2,
-                            WorkflowDefinitionId = new Guid("11111111-0000-0000-0000-000000000003")
-                        });
                 });
 
             modelBuilder.Entity("DataAccess.Models.WorkflowStepInstance", b =>
@@ -1886,51 +1599,6 @@ namespace DataAccess.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("AgentSkill", b =>
-                {
-                    b.HasOne("DataAccess.Models.Agent", null)
-                        .WithMany()
-                        .HasForeignKey("AgentsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DataAccess.Models.Skill", null)
-                        .WithMany()
-                        .HasForeignKey("SkillsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("DataAccess.Models.Agent", b =>
-                {
-                    b.HasOne("DataAccess.Models.Department", "Department")
-                        .WithMany("Agents")
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DataAccess.Models.User", "User")
-                        .WithOne()
-                        .HasForeignKey("DataAccess.Models.Agent", "UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Department");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("DataAccess.Models.AgentProfile", b =>
-                {
-                    b.HasOne("DataAccess.Models.Agent", "Agent")
-                        .WithOne("Profile")
-                        .HasForeignKey("DataAccess.Models.AgentProfile", "AgentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Agent");
                 });
 
             modelBuilder.Entity("DataAccess.Models.Attachment", b =>
@@ -2441,11 +2109,6 @@ namespace DataAccess.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("DataAccess.Models.Agent", b =>
-                {
-                    b.Navigation("Profile");
-                });
-
             modelBuilder.Entity("DataAccess.Models.Category", b =>
                 {
                     b.Navigation("Tickets");
@@ -2467,8 +2130,6 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("DataAccess.Models.Department", b =>
                 {
-                    b.Navigation("Agents");
-
                     b.Navigation("Categories");
 
                     b.Navigation("ChildDepartments");
