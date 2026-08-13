@@ -2,11 +2,8 @@ using BusinessLogic.Abstractions;
 using BusinessLogic.Common;
 using Contract.Dtos;
 using Contract.Paged;
-using DataAccess.Context;
-using DataAccess.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace WebApplication1.Controllers;
 
@@ -14,17 +11,12 @@ namespace WebApplication1.Controllers;
 [Route("api/[controller]")]
 public class TicketsController : ControllerBase
 {
-    private readonly AppDbContext _db;
     private readonly ITicketService _ticketService;
 
-    public TicketsController(
-        AppDbContext db,
-        ITicketService ticketService)
+    public TicketsController(ITicketService ticketService)
     {
-        _db = db;
         _ticketService = ticketService;
     }
-
 
     // =========================================================
     // DEBUG AUTH
@@ -57,12 +49,11 @@ public class TicketsController : ControllerBase
         });
     }
 
-
     // =========================================================
     // GET: /api/tickets
     // =========================================================
     //
-    // الوصول الحقيقي يتم داخل TicketService
+    // الوصول الحقيقي والصلاحيات يتم داخل TicketService
     // =========================================================
 
     [HttpGet]
@@ -82,7 +73,6 @@ public class TicketsController : ControllerBase
             result);
     }
 
-
     // =========================================================
     // GET: /api/tickets/statistics
     // Staff only
@@ -90,7 +80,8 @@ public class TicketsController : ControllerBase
 
     [HttpGet("statistics")]
     [Authorize]
-    public async Task<ActionResult<ServiceResult<TicketStatisticsDto>>>
+    public async Task<
+        ActionResult<ServiceResult<TicketStatisticsDto>>>
         GetTicketStatistics(
             CancellationToken cancellationToken = default)
     {
@@ -102,7 +93,6 @@ public class TicketsController : ControllerBase
             result.StatusCode,
             result);
     }
-
 
     // =========================================================
     // GET: /api/tickets/{id}
@@ -125,7 +115,6 @@ public class TicketsController : ControllerBase
             result.StatusCode,
             result);
     }
-
 
     // =========================================================
     // GET: /api/tickets/{ticketId}/history
@@ -151,7 +140,6 @@ public class TicketsController : ControllerBase
             result);
     }
 
-
     // =========================================================
     // GET: /api/tickets/my
     // =========================================================
@@ -174,7 +162,6 @@ public class TicketsController : ControllerBase
             result);
     }
 
-
     // =========================================================
     // POST: /api/tickets
     // =========================================================
@@ -182,7 +169,7 @@ public class TicketsController : ControllerBase
     [HttpPost]
     [Authorize]
     public async Task<
-        ActionResult<TicketDetailDto>>
+        ActionResult<ServiceResult<TicketDetailDto>>>
         CreateTicket(
             [FromBody] CreateTicketRequest request,
             CancellationToken cancellationToken = default)
@@ -197,7 +184,9 @@ public class TicketsController : ControllerBase
         var dto = new CreateTicketDto
         {
             Title = request.Title.Trim(),
+
             Description = request.Description.Trim(),
+
             CategoryId = request.CategoryId
         };
 
@@ -219,13 +208,13 @@ public class TicketsController : ControllerBase
             result);
     }
 
-
     // =========================================================
     // PUT: /api/tickets/{id}
+    // Staff
     // =========================================================
     //
-    // UpdateTicket أصبح من خلال Service
-    // وليس مباشرة عن طريق _db
+    // UpdateTicket يتم من خلال TicketService
+    // مع Optimistic Concurrency باستخدام RowVersion
     // =========================================================
 
     [HttpPut("{id:guid}")]
@@ -247,9 +236,13 @@ public class TicketsController : ControllerBase
         var dto = new UpdateTicketDto
         {
             Title = request.Title.Trim(),
+
             Description = request.Description.Trim(),
+
             CategoryId = request.CategoryId,
+
             PriorityId = request.PriorityId,
+
             RowVersion = request.RowVersion
         };
 
@@ -264,9 +257,9 @@ public class TicketsController : ControllerBase
             result);
     }
 
-
     // =========================================================
-    // PUT: /api/tickets/{id}/status
+    // PATCH: /api/tickets/{id}/status
+    // Staff
     // =========================================================
 
     [HttpPatch("{id:guid}/status")]
@@ -286,8 +279,11 @@ public class TicketsController : ControllerBase
 
         var dto = new UpdateTicketStatusDto
         {
-            NewStatusCode = request.NewStatusCode,
-            Reason = request.Reason
+            NewStatusCode = request.NewStatusCode.Trim(),
+
+            Reason = string.IsNullOrWhiteSpace(request.Reason)
+                ? null
+                : request.Reason.Trim()
         };
 
         var result =
@@ -301,12 +297,9 @@ public class TicketsController : ControllerBase
             result);
     }
 
-
     // =========================================================
-    // PUT: /api/tickets/{id}/assign
-    // =========================================================
-    //
-    // Admin + DepartmentHead
+    // PATCH: /api/tickets/{id}/assign
+    // Admin, DepartmentHead
     // =========================================================
 
     [HttpPatch("{id:guid}/assign")]
@@ -334,9 +327,9 @@ public class TicketsController : ControllerBase
             result);
     }
 
-
     // =========================================================
     // POST: /api/tickets/{id}/auto-assign
+    // Admin, DepartmentHead
     // =========================================================
 
     [HttpPost("{id:guid}/auto-assign")]
@@ -357,9 +350,9 @@ public class TicketsController : ControllerBase
             result);
     }
 
-
     // =========================================================
     // POST: /api/tickets/{id}/reopen
+    // Reporter, Staff
     // =========================================================
 
     [HttpPost("{id:guid}/reopen")]
@@ -380,7 +373,6 @@ public class TicketsController : ControllerBase
             result);
     }
 
-
     // =========================================================
     // DELETE: /api/tickets/{id}
     // Admin only
@@ -400,31 +392,6 @@ public class TicketsController : ControllerBase
         return StatusCode(
             result.StatusCode,
             result);
-    }
-
-
-    // =========================================================
-    // GET: /api/categories
-    // =========================================================
-
-    [HttpGet("/api/categories")]
-    [Authorize]
-    public async Task<
-        ActionResult<IEnumerable<CategorySummaryResponse>>>
-        GetCategories()
-    {
-        var categories = await _db.Categories
-            .AsNoTracking()
-            .OrderBy(category => category.Name)
-            .Select(category => new CategorySummaryResponse
-            {
-                Id = category.Id,
-                CategoryName = category.Name,
-                TicketCount = category.Tickets.Count()
-            })
-            .ToListAsync();
-
-        return Ok(categories);
     }
 }
 
