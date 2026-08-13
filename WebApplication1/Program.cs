@@ -244,7 +244,7 @@ builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 // Authentication / Authorization Services
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IEmailSender, ConsoleEmailSender>();
+builder.Services.AddScoped<IEmailSender, BusinessLogic.Services.SmtpEmailSender>();
 
 
 // Business Logic

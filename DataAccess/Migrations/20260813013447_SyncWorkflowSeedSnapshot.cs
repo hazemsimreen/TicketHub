@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -90,6 +90,27 @@ namespace DataAccess.Migrations
     )
         SET IDENTITY_INSERT [dbo].[Roles] OFF;
     """);
+            migrationBuilder.InsertData(
+                table: "Roles",
+                columns: new[] { "Id", "Code", "IsDepartmentScoped", "CreatedAt", "IsDeleted" },
+                values: new object[,]
+                {
+                    { 1, "Admin", false, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), false },
+                    { 2, "Supervisor", true, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), false },
+                    { 3, "Agent", true, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), false },
+                    { 4, "Citizen", false, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), false }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Departments",
+                columns: new[] { "Id", "Code", "Name", "ParentDepartmentId", "CreatedAt", "IsDeleted" },
+                values: new object[,]
+                {
+                    { 1, "ROADS", "Roads & Infrastructure", null, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), false },
+                    { 2, "SANITATION", "Sanitation", null, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), false },
+                    { 3, "LIGHTING", "Street Lighting", null, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), false }
+                });
+
             migrationBuilder.InsertData(
                 table: "WorkflowDefinitions",
                 columns: new[]
