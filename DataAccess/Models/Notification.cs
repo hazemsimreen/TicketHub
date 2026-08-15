@@ -11,6 +11,10 @@ public class Notification : AuditableEntity
 
     public bool IsRead { get; set; } = false;
 
+    // Stores the fully formatted notification message at creation time for the client.
+    
+    public string Message { get; set; } = string.Empty;
+
     public User RecipientUser { get; set; } = null!;
 
     public NotificationType NotificationType { get; set; } = null!;

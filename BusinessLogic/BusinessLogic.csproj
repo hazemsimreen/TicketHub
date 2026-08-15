@@ -20,4 +20,10 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.8" />
   </ItemGroup>
 
+	<!-- Role 4: needed for IFormFile (AttachmentService) and IWebHostEnvironment. -->
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+	
+
 </Project>

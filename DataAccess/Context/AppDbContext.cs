@@ -67,6 +67,9 @@ public class AppDbContext
     public DbSet<RefreshToken> RefreshTokens =>
         Set<RefreshToken>();
 
+    // Role 4 — Collaboration, Files & Insight
+    public DbSet<Rating> Ratings => Set<Rating>();
+
 
     // =========================================================
     // Automatic Audit Stamping + Soft Delete
@@ -701,6 +704,12 @@ public class AppDbContext
                 .WithMany(x => x.Attachments)
                 .HasForeignKey(x => x.MessageId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Role 4 addition
+            entity.HasOne(x => x.UploadedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.UploadedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
 
@@ -1176,6 +1185,36 @@ public class AppDbContext
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+
+        // =========================================================
+        // Rating (Role 4)
+        // =========================================================
+
+        modelBuilder.Entity<Rating>(entity =>
+        {
+            entity.ToTable("Ratings", t => t.HasCheckConstraint("CK_Rating_Stars_Range", "[Stars] BETWEEN 1 AND 5"));
+
+            entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => x.TicketId)
+                .IsUnique();
+
+            entity.Property(x => x.Comment)
+                .HasMaxLength(1000);
+
+            entity.HasOne(x => x.Ticket)
+                .WithMany()
+                .HasForeignKey(x => x.TicketId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.RatedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.RatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+
         modelBuilder.ApplyOrganisationStaffCore();
     }
 

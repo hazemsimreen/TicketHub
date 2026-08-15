@@ -25,6 +25,14 @@ public static class BusinessLogicExtensions
 
         services.AddSingleton<ITicketWorkflow, TicketWorkflow>();
 
+
+        // Role 4 — Collaboration, Files & Insight
+        services.AddScoped<ICommentService, CommentService>();
+        services.AddScoped<IAttachmentService, AttachmentService>();
+        services.AddScoped<IRatingService, RatingService>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IReportService, ReportService>();
+
         return services;
     }
 }
