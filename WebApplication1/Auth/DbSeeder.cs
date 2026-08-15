@@ -5,10 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Auth;
 
-/// <summary>
-/// Seeds the 4 system roles into the database on startup.
-/// Called automatically when the application starts.
-/// </summary>
+
+// Seeds the 4 system roles into the database on startup.
+// Called automatically when the application starts.
 public static class DbSeeder
 {
     public static async Task SeedAsync(AppDbContext db)

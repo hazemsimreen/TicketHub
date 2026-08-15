@@ -7,6 +7,9 @@ public class TicketComment : AuditableEntity
     public Guid TicketId { get; set; }
 
     public Guid AuthorUserId { get; set; }
+    /// Saves the author's name when the comment is created.
+    
+    public string AuthorNameSnapshot { get; set; } = string.Empty;
 
     public Guid? StepInstanceId { get; set; }
 
